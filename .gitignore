@@ -215,3 +215,4 @@ __marimo__/
 
 .venv/
 bin/*
+.idea/
