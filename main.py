@@ -1,70 +1,162 @@
-import pandas as pd
-import sqlite3  # Или psycopg2 для PostgreSQL
-import os
+from __future__ import annotations
 
-def update_science_docs_db():
+import os
+import sqlite3
+from pathlib import Path
+
+import pandas as pd
+from dotenv import load_dotenv
+
+# Корень проекта — там, где лежит этот файл
+PROJECT_ROOT = Path(__file__).resolve().parent
+DB_PATH = PROJECT_ROOT / "bin" / "science_docs.db"
+CSV_DIR = PROJECT_ROOT
+
+
+def update_science_docs_db() -> None:
+    """Импортирует данные из scimagojr CSV-файлов в journals_ranks.
+
+    Поле «Issn» в CSV содержит либо два значения через запятую
+    («15424863, 00079235»), либо одно. Порядок в scimagojr: первое —
+    print ISSN, второе — eISSN. Если значение одно, природа неизвестна
+    (бывают online-only журналы с единственным eISSN), поэтому храним
+    его в обоих полях — issn и eissn — чтобы поиск работал в любом случае.
+    """
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
     total_in_db = 0
 
-    conn = sqlite3.connect('science_docs.db')
-
-    for YEAR in range(2020, 2024+1):
-        # 1. Загружаем данные из CSV, который мы скачали со Scimago
-        # В этом файле УЖЕ есть Title, ISSN, SJR и Квартили для ВСЕХ журналов
-        file_name = f'scimagojr {YEAR}.csv'
-        if not os.path.exists(file_name):
-            print(f"⚠️ Файл {file_name} не найден, пропускаю.")
+    for year in range(2020, 2025):
+        csv_path = CSV_DIR / f"scimagojr {year}.csv"
+        if not csv_path.exists():
+            print(f"⚠️  Файл {csv_path.name} не найден, пропускаю.")
             continue
 
-        # Пробуем прочитать файл. Если ошибка в разделителе - pandas скажет
         try:
-            df = pd.read_csv(file_name, sep=';')
-            if len(df.columns) < 5:  # Если колонок слишком мало, значит разделитель скорее всего запятая
-                df = pd.read_csv(file_name, sep=',')
-        except Exception as e:
-            print(f"❌ Ошибка чтения {file_name}: {e}")
+            df = pd.read_csv(csv_path, sep=";", low_memory=False)
+            if len(df.columns) < 5:
+                df = pd.read_csv(csv_path, sep=",", low_memory=False)
+        except Exception as exc:
+            print(f"❌ Ошибка чтения {csv_path.name}: {exc}")
             continue
 
-        # 2. Очистка данных
-        # Нам нужны только колонки: Название, ISSN, Квартиль, SJR, Страна
-        df_cleaned = df[['Title', 'Issn', 'SJR Best Quartile', 'SJR', 'Country', 'H index']].copy()  # Добавлен .copy()
+        needed = ["Title", "Issn", "SJR Best Quartile", "SJR", "Country", "H index"]
+        missing = [c for c in needed if c not in df.columns]
+        if missing:
+            print(f"❌ В {csv_path.name} нет колонок: {missing}, пропускаю.")
+            continue
 
-        # Разделяем ISSN (в файле они могут быть через запятую)
-        # Нам важно, чтобы для поиска в будущем ISSN был чистым
-        df_cleaned.loc[:, 'Issn'] = df_cleaned['Issn'].str.split(',').str[0]  # Используем .loc
+        df = df[needed].copy()
+        df["Year"] = year
 
-        # Добавляем колонку Год (так как файл за 2023 год)
-        df_cleaned.loc[:, 'Year'] = YEAR  # Используем .loc
+        rows: list[dict] = []
+        for _, row in df.iterrows():
+            raw_issn = str(row["Issn"]).strip() if pd.notna(row["Issn"]) else ""
+            parts = [s.strip() for s in raw_issn.split(",") if s.strip()]
 
-        print(f"Загружено {len(df_cleaned)} журналов с квартилями!")
+            if len(parts) >= 2:
+                # Стандартный случай: первый — print ISSN, второй — eISSN
+                issn, eissn = parts[0], parts[1]
+            elif len(parts) == 1:
+                # Одно значение — природа неизвестна, пишем в оба поля
+                issn = eissn = parts[0]
+            else:
+                issn = eissn = None
 
-        # 3. "Загнать в БД" (Пример для SQLite, для Postgres принцип тот же)
-        mode = 'replace' if YEAR == 2020 else 'append'
-        df_cleaned.to_sql('journals_ranks', conn, if_exists=mode, index=False)
+            new_row = row.to_dict()
+            new_row["Issn"] = issn
+            new_row["eIssn"] = eissn
+            rows.append(new_row)
 
-        total_in_db += len(df_cleaned)
+        df_expanded = pd.DataFrame(rows)
 
-    print(f"✅ Данные успешно импортированы в базу данных!\n {total_in_db} записей")
+        mode = "replace" if year == 2020 else "append"
+        df_expanded.to_sql("journals_ranks", conn, if_exists=mode, index=False)
 
-    # --- ДОБАВЬТЕ ЭТО ДЛЯ ПРОВЕРКИ ---
+        print(f"  {year}: загружено {len(df_expanded)} журналов.")
+        total_in_db += len(df_expanded)
 
-    # 4. Проверочный запрос прямо из кода
-    print("\n📊 Проверка содержимого базы 'science_docs.db':")
-    check_df = pd.read_sql("SELECT Year, COUNT(*) as Count FROM journals_ranks GROUP BY Year ORDER BY Year", conn)
-    print(check_df)
+    print(f"\n✅ Импорт завершён. Всего строк в БД: {total_in_db}")
 
-    # 5. Обязательно закрываем соединение, чтобы сохранить файл на диск
+    check_df = pd.read_sql(
+        "SELECT Year, COUNT(*) as Count FROM journals_ranks GROUP BY Year ORDER BY Year",
+        conn,
+    )
+    print("\n📊 Строк по годам:")
+    print(check_df.to_string(index=False))
+
     conn.close()
+
+
+def update_environment(env_file: str) -> bool:
+    env_path = PROJECT_ROOT / env_file
+    if not env_path.exists():
+        print(f"⚠️  Файл окружения не найден: {env_path}")
+        return False
+    load_dotenv(env_path)
+    print(f"✅ Переменные окружения загружены из {env_file}")
+    return True
 
 
 if __name__ == "__main__":
     import argparse
+    import sys
 
-    arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("-u", "--update", help="Обновить базу данных статей.")
+    sys.path.insert(0, str(PROJECT_ROOT / "app"))
 
-    args = arg_parser.parse_args()
+    parser = argparse.ArgumentParser(description="ScienceDocs — управление данными.")
+    parser.add_argument(
+        "-u", "--update",
+        action="store_true",
+        help="Импортировать/обновить journals_ranks из scimagojr CSV.",
+    )
+    parser.add_argument(
+        "-r", "--refresh-warehouse",
+        action="store_true",
+        dest="refresh_warehouse",
+        help="Перестроить warehouse DB из journals_ranks (запускать после --update).",
+    )
+    parser.add_argument(
+        "-b", "--batch",
+        metavar="INPUT",
+        help="Запустить batch-обработку статей из .txt или .xlsx файла.",
+    )
+    parser.add_argument(
+        "-o", "--output",
+        metavar="OUTPUT",
+        default="report.json",
+        help="Путь к выходному JSON-отчёту для --batch (по умолчанию: report.json).",
+    )
+    parser.add_argument(
+        "-e", "--environment",
+        metavar="ENV",
+        default="bin/info.env",
+        help="Путь к файлу с переменными окружения (по умолчанию: bin/info.env).",
+    )
+    args = parser.parse_args()
+
+    if args.environment:
+        print("▶ Загружаем переменные окружения…")
+        if not update_environment(args.environment):
+            exit(1)
+        print()
+
     if args.update:
-        print("Обновляем базу данных.")
+        print("▶ Обновляем journals_ranks из CSV…")
         update_science_docs_db()
-        print("Готово.")
+        print()
 
+    if args.refresh_warehouse:
+        print("▶ Перестраиваем warehouse DB…")
+        from app.warehouse_refresh import refresh_warehouse_from_legacy
+        count = refresh_warehouse_from_legacy()
+        print(f"✅ Warehouse обновлён, обработано строк: {count}\n")
+
+    if args.batch:
+        print(f"▶ Batch-обработка файла: {args.batch}")
+        from app.batch import process_batch
+        results = process_batch(args.batch, args.output)
+        print(f"✅ Обработано статей: {len(results)}. Отчёт: {args.output}\n")
+
+    if not any([args.update, args.refresh_warehouse, args.batch]):
+        parser.print_help()

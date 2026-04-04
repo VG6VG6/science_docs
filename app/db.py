@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine, text
@@ -56,6 +57,7 @@ def init_db() -> None:
     # Import models so they are registered with Base.metadata
     import models  # noqa: F401
 
+    print(settings.database_url)
     Base.metadata.create_all(bind=engine)
     _ensure_additional_columns()
 

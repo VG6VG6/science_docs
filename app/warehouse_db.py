@@ -34,6 +34,8 @@ def _set_sqlite_pragma(dbapi_connection, connection_record) -> None:
         cursor.close()
     except Exception:
         return
+
+
 WarehouseSessionLocal = sessionmaker(
     bind=warehouse_engine,
     autoflush=False,
@@ -43,32 +45,34 @@ WarehouseSessionLocal = sessionmaker(
 )
 
 
-def _ensure_article_cache_scopus_payload_columns() -> None:
-    """Add JSON payload columns to existing SQLite warehouse_article_cache tables."""
+def _migrate_columns() -> None:
+    """Добавляет колонки, которых может не быть в уже существующих БД."""
+    migrations = {
+        "warehouse_journals": [
+            ("eissn", "VARCHAR"),
+        ],
+        "warehouse_article_cache": [
+            ("scopus_entry", "TEXT"),
+            ("scopus_search_meta", "TEXT"),
+            ("eissn", "VARCHAR"),
+        ],
+    }
     with warehouse_engine.begin() as conn:
-        result = conn.execute(text("PRAGMA table_info(warehouse_article_cache);"))
-        existing_cols = {row[1] for row in result.fetchall()}
-        if "scopus_entry" not in existing_cols:
-            conn.execute(
-                text(
-                    "ALTER TABLE warehouse_article_cache "
-                    "ADD COLUMN scopus_entry TEXT"
-                )
-            )
-        if "scopus_search_meta" not in existing_cols:
-            conn.execute(
-                text(
-                    "ALTER TABLE warehouse_article_cache "
-                    "ADD COLUMN scopus_search_meta TEXT"
-                )
-            )
+        for table, columns in migrations.items():
+            result = conn.execute(text(f"PRAGMA table_info({table});"))
+            existing_cols = {row[1] for row in result.fetchall()}
+            for col_name, col_type in columns:
+                if col_name not in existing_cols:
+                    conn.execute(text(
+                        f"ALTER TABLE {table} ADD COLUMN {col_name} {col_type}"
+                    ))
 
 
 def init_warehouse_db() -> None:
     import warehouse_models  # noqa: F401
 
     WarehouseBase.metadata.create_all(bind=warehouse_engine)
-    _ensure_article_cache_scopus_payload_columns()
+    _migrate_columns()
 
 
 @contextmanager
@@ -82,4 +86,3 @@ def get_warehouse_session() -> Session:
         raise
     finally:
         session.close()
-

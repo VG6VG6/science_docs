@@ -21,7 +21,10 @@ class WarehouseJournal(WarehouseBase):
     __tablename__ = "warehouse_journals"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    issn: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
+    # print ISSN. Может быть None для online-only журналов.
+    issn: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    # electronic ISSN. Может быть None если журнал имеет только print версию.
+    eissn: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     journal_name: Mapped[str | None] = mapped_column(String, nullable=True)
     country: Mapped[str | None] = mapped_column(String, nullable=True)
 
@@ -50,15 +53,15 @@ class ArticleCache(WarehouseBase):
     __tablename__ = "warehouse_article_cache"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    query_title: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
+    query_title: Mapped[str] = mapped_column(String, nullable=False, unique=False, index=True)
     scopus_title: Mapped[str | None] = mapped_column(String, nullable=True)
     issn: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    eissn: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     publication_year: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     journal_name: Mapped[str | None] = mapped_column(String, nullable=True)
-    # Full Scopus Search API payloads (first hit + search-results metadata without entry[]).
+
     scopus_entry: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     scopus_search_meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     last_checked_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )
-

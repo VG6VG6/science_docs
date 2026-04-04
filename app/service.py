@@ -20,6 +20,7 @@ def verify_article_core(session: Session, title: str) -> Dict[str, Any]:
         scopus_data = ScopusMetadata(
             title=cached.scopus_title,
             issn=cached.issn,
+            eissn=cached.eissn,          # eissn теперь тоже берём из кеша
             publication_year=cached.publication_year,
             journal_name=cached.journal_name,
             raw_entry=cached.scopus_entry,
@@ -35,10 +36,11 @@ def verify_article_core(session: Session, title: str) -> Dict[str, Any]:
 
     journal_rank = None
     journal = None
-    if scopus_data and scopus_data.issn and scopus_data.publication_year:
+    if scopus_data and (scopus_data.issn or scopus_data.eissn) and scopus_data.publication_year:
         journal_rank = match_metric(
             session=session,
             issn=scopus_data.issn,
+            eissn=scopus_data.eissn,
             year=scopus_data.publication_year,
         )
         if journal_rank:
@@ -50,13 +52,13 @@ def verify_article_core(session: Session, title: str) -> Dict[str, Any]:
         "scopus": {
             "title": scopus_data.title if scopus_data else None,
             "issn": scopus_data.issn if scopus_data else None,
+            "eissn": scopus_data.eissn if scopus_data else None,
             "publication_year": scopus_data.publication_year if scopus_data else None,
             "journal_name": scopus_data.journal_name if scopus_data else None,
-            # "search": scopus_data.search_meta if scopus_data else None,
-            # "entry": scopus_data.raw_entry if scopus_data else None,
         },
         "ranking": {
             "issn": journal.issn if journal_rank and journal else None,
+            "eissn": journal.eissn if journal_rank and journal else None,
             "title": journal.journal_name if journal_rank and journal else None,
             "year": journal_rank.year if journal_rank else None,
             "quartile": journal_rank.quartile if journal_rank else None,
