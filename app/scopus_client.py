@@ -16,6 +16,7 @@ class ScopusMetadata:
 
     title: Optional[str]
     issn: Optional[str]
+    eissn: Optional[str]
     publication_year: Optional[int]
     journal_name: Optional[str]
     # First hit from search (full Elsevier document entry as returned by API).
@@ -54,18 +55,6 @@ def _build_scopus_query(user_query: str) -> str:
     # Escape quotes by doubling them (Scopus query syntax).
     q_escaped = q.replace('"', '""')
     return f'TITLE("{q_escaped}")'
-
-
-def _extract_issn(entry: dict[str, Any]) -> Optional[str]:
-    # Prefer print ISSN; fallback to eISSN. Some entries return one but not the other.
-    issn = entry.get("prism:issn") or entry.get("prism:eIssn") or entry.get("prism:eissn")
-    if isinstance(issn, list):
-        issn = issn[0] if issn else None
-    if issn is None:
-        return None
-    s = str(issn).strip()
-    return s or None
-
 
 def get_scopus_metadata(query: str) -> Optional[ScopusMetadata]:
     """Search Scopus by article title or DOI and return core metadata.
@@ -120,7 +109,8 @@ def get_scopus_metadata(query: str) -> Optional[ScopusMetadata]:
     entry = entries[0]
 
     title = entry.get("dc:title")
-    issn = _extract_issn(entry)
+    issn = entry.get("prism:issn")
+    eissn = entry.get("prism:eIssn")
     cover_date = entry.get("prism:coverDate")
     journal_name = entry.get("prism:publicationName")
 
@@ -129,9 +119,19 @@ def get_scopus_metadata(query: str) -> Optional[ScopusMetadata]:
     return ScopusMetadata(
         title=title,
         issn=issn,
+        eissn=eissn,
         publication_year=year,
         journal_name=journal_name,
         raw_entry=dict(entry),
         search_meta=search_meta if search_meta else None,
     )
 
+
+if __name__ == "__main__":
+    ans = get_scopus_metadata("Acta Crystallographica Section D: Structural Biology")
+
+    print("Title:", ans.title)
+    print("ISSN:", ans.issn)
+    print("eISSN:", ans.eissn)
+    print("Year:", ans.publication_year)
+    print("journal:", ans.journal_name)

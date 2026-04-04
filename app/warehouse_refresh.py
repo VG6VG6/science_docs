@@ -25,6 +25,11 @@ def _to_float(value) -> float | None:
         return None
 
 
+def _journal_key(issn: str | None, eissn: str | None) -> tuple:
+    """Ключ дедупликации журнала. Используем пару (issn, eissn)."""
+    return (issn or "", eissn or "")
+
+
 def refresh_warehouse_from_legacy() -> int:
     """Rebuild/update warehouse DB from current journals_ranks."""
     init_db()
@@ -33,29 +38,69 @@ def refresh_warehouse_from_legacy() -> int:
     rows_count = 0
     with get_session() as legacy, get_warehouse_session() as warehouse:
         existing_journals = warehouse.scalars(select(WarehouseJournal)).all()
-        journal_by_issn = {j.issn: j for j in existing_journals}
+        # Индексируем по паре (issn, eissn) — основной ключ дедупликации.
+        # Дополнительно индексируем по каждому отдельному значению для быстрого
+        # поиска в случае когда Scopus возвращает только один из двух идентификаторов.
+        journal_by_key: dict[tuple, WarehouseJournal] = {}
+        journal_by_issn: dict[str, WarehouseJournal] = {}
+        journal_by_eissn: dict[str, WarehouseJournal] = {}
+        for j in existing_journals:
+            journal_by_key[_journal_key(j.issn, j.eissn)] = j
+            if j.issn:
+                journal_by_issn[j.issn] = j
+            if j.eissn:
+                journal_by_eissn[j.eissn] = j
 
         existing_metrics = warehouse.scalars(select(WarehouseJournalMetric)).all()
         metric_by_key = {(m.journal_id, m.year): m for m in existing_metrics}
 
         rows = legacy.scalars(select(JournalRank)).all()
         for row in rows:
-            issn = row.issn or ""
+            issn = row.issn or None
+            eissn = row.eissn or None
             year = row.year
-            if not issn or year is None:
+
+            # Пропускаем строки без хоть какого-то идентификатора
+            if not issn and not eissn:
+                continue
+            if year is None:
                 continue
 
-            journal = journal_by_issn.get(issn)
+            # Ищем существующий журнал: сначала по паре, потом по каждому отдельно
+            key = _journal_key(issn, eissn)
+            journal = (
+                journal_by_key.get(key)
+                or (journal_by_issn.get(issn) if issn else None)
+                or (journal_by_eissn.get(eissn) if eissn else None)
+            )
+
             if not journal:
-                journal = WarehouseJournal(issn=issn, journal_name=row.title, country=row.country)
+                journal = WarehouseJournal(
+                    issn=issn,
+                    eissn=eissn,
+                    journal_name=row.title,
+                    country=row.country,
+                )
                 warehouse.add(journal)
                 warehouse.flush()
-                journal_by_issn[issn] = journal
+                # Регистрируем во всех индексах
+                journal_by_key[key] = journal
+                if issn:
+                    journal_by_issn[issn] = journal
+                if eissn:
+                    journal_by_eissn[eissn] = journal
             else:
                 if row.title and not journal.journal_name:
                     journal.journal_name = row.title
                 if row.country and not journal.country:
                     journal.country = row.country
+                # Дополняем недостающие идентификаторы если нашли журнал по одному из них
+                if issn and not journal.issn:
+                    journal.issn = issn
+                    journal_by_issn[issn] = journal
+                if eissn and not journal.eissn:
+                    journal.eissn = eissn
+                    journal_by_eissn[eissn] = journal
 
             metric_key = (journal.id, year)
             metric = metric_by_key.get(metric_key)
@@ -71,10 +116,10 @@ def refresh_warehouse_from_legacy() -> int:
             metric.vak_category = row.vak_category
             metric.source_updated_at = datetime.now()
             rows_count += 1
+
     return rows_count
 
 
 if __name__ == "__main__":
     imported = refresh_warehouse_from_legacy()
     print(f"Warehouse refreshed, processed rows: {imported}")
-

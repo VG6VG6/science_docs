@@ -13,6 +13,7 @@ class JournalRank(Base):
     # so we map a composite primary key over existing fields.
     title: Mapped[str | None] = mapped_column(String, primary_key=True, nullable=True)
     issn: Mapped[str | None] = mapped_column(String, primary_key=True, nullable=True, index=True)
+    eissn: Mapped[str | None] = mapped_column("eIssn", String, primary_key=True, nullable=True, index=True)
     quartile: Mapped[str | None] = mapped_column("SJR Best Quartile", String, nullable=True)
     sjr: Mapped[float | None] = mapped_column("SJR", Float, nullable=True)
     country: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -22,4 +23,3 @@ class JournalRank(Base):
     # Russian-specific fields
     is_white_list: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     vak_category: Mapped[str | None] = mapped_column(String, nullable=True)  # K1, K2, K3
-

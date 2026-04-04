@@ -212,3 +212,7 @@ __marimo__/
 
 # tables
 *.csv
+
+.venv/
+bin/*
+.idea/
