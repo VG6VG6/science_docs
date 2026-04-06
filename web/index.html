@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <form action="" class="inputForm" id="inputForm">
+        <div class="formScientific">
+            <label for="title">Enter Title</label>
+            <input type="text" id="title" name="title" required>
+            <button type="submit" class="submitBtn" id="submitBtn">Find</button>
+
+        </div>
+    </form>
+    <div class="status" id="status"></div>
+    <table>
+        <thead>
+            <tr>
+                <th>Запрос</th>
+                <th>Scopus Title</th>
+                <th>ISSN / eISSN</th>
+                <th>Год</th>
+                <th>Журнал</th>
+                <th>Quartile</th>
+                <th>SJR</th>
+                <th>H-index</th>
+                <th>Country</th>
+                <th>White List</th>
+                <th>VAK</th>
+            </tr>
+        </thead>
+        <tbody id="resultBody">
+            <tr>
+                <td colspan="11" class="muted">Пока нет данных</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script src="/static/script.js"></script>
+</body>
+
+</html>
