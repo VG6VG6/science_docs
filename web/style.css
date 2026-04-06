@@ -56,6 +56,7 @@ button:hover {
 
 table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     background: #ffffff;
     border: 1px solid #e5e7eb;
@@ -70,6 +71,9 @@ thead th {
     font-weight: 600;
     padding: 10px;
     font-size: 14px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 tbody td {
@@ -77,6 +81,9 @@ tbody td {
     padding: 10px;
     font-size: 14px;
     vertical-align: top;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .muted {

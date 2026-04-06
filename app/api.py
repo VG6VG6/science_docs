@@ -1,31 +1,77 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException, Query
+from datetime import datetime
+from pathlib import Path
 
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ENV_FILE = PROJECT_ROOT / "bin" / "info.env"
+if ENV_FILE.exists():
+    load_dotenv(ENV_FILE)
+
+from batch import process_batch
 from db import init_db
-from service import verify_article
 from warehouse_db import init_warehouse_db
 
 
 app = FastAPI(title="Scientific Publication Verification System")
+WEB_DIR = PROJECT_ROOT / "web"
+REQUESTS_DIR = PROJECT_ROOT / "bin" / "requests"
 
+
+def _load_runtime_environment() -> None:
+    env_file = PROJECT_ROOT / "bin" / "info.env"
+    if env_file.exists():
+        load_dotenv(env_file)
+
+
+def _verify_via_batch(title: str) -> dict:
+    """Create per-request batch files and return the first processed article."""
+    REQUESTS_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    input_path = REQUESTS_DIR / f"request_{stamp}.txt"
+    output_path = REQUESTS_DIR / f"report_{stamp}.json"
+
+    input_path.write_text(f"{title}\n", encoding="utf-8")
+
+    results = process_batch(str(input_path), str(output_path))
+    if not results:
+        raise HTTPException(status_code=500, detail="Batch processing returned no results.")
+
+    result = results[0]
+    result["batch_files"] = {
+        "input": str(input_path.relative_to(PROJECT_ROOT)),
+        "output": str(output_path.relative_to(PROJECT_ROOT)),
+    }
+    return result
 
 @app.on_event("startup")
 def on_startup() -> None:
+    _load_runtime_environment()
     init_db()
     init_warehouse_db()
 
 
 @app.get("/verify")
 def verify(title: str = Query(..., description="Article title to verify")):
-    """Verify a single article by title.
+    """Verify one article via the same batch flow as main.py -b.
 
     Pipeline:
-    - Search Scopus for metadata.
-    - Match ISSN+year in local DB (Scimago + Russian lists).
-    - Return unified JSON with all metrics.
+    - Create a one-line .txt input file for the requested title.
+    - Run batch processing (same core path as main.py -b).
+    - Return first record + paths to generated batch files.
     """
     if not title.strip():
         raise HTTPException(status_code=400, detail="Title must not be empty.")
-    return verify_article(title.strip())
+    return _verify_via_batch(title.strip())
 
+
+@app.get("/")
+def frontend_index() -> FileResponse:
+    return FileResponse(WEB_DIR / "index.html")
+
+app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")

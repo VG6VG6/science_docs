@@ -1,8 +1,9 @@
 const form = document.getElementById('inputForm');
 const titleInput = document.getElementById('title');
 const resultBody = document.getElementById('resultBody');
+const statusEl = document.getElementById('status');
 
-function save(value) {
+function safe(value) {
     if (value === null || value === undefined || value === "") {
         return "-";
     }
@@ -33,33 +34,36 @@ function renderRow(data) {
           <td>${safe(ranking.vak_category)}</td>
         </tr>
       `;
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const title = titleInput.value.trim();
-        if (!title) {
-            setStatus("Please enter a title", true);
-            return;
-        }
-        setStatus("Searching...");
-        resultBody.innerHTML = `<tr><td colspan="11" class="muted">Получаем данные с сервера...</td></tr>`;
-        try {
-            const url = `http://localhost:8000/verfy?title=${encodeURIComponent(title)}`;
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
-            }
-            const data = await response.json();
-            if (data.error) {
-                setStatus(`Error: ${data.error}`, true);
-                resultBody.innerHTML = `<tr><td colspan="11" class="muted">No results found.</td></tr>`;
-            } else {
-                setStatus("Search completed");
-                renderRow(data);
-            }
-        }
-        catch (error) {
-            setStatus(`Error: ${error.message}`, true);
-            resultBody.innerHTML = `<tr><td colspan="11" class="muted">An error occurred while fetching data.</td></tr>`;
-        }
-    })
 }
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const title = titleInput.value.trim();
+    if (!title) {
+        setStatus('Please enter a title', true);
+        return;
+    }
+
+    setStatus('Searching...');
+    resultBody.innerHTML = '<tr><td colspan="11" class="muted">Получаем данные с сервера...</td></tr>';
+
+    try {
+        const url = `/verify?title=${encodeURIComponent(title)}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.scopus_error) {
+            setStatus(`Scopus error: ${data.scopus_error}`, true);
+        } else {
+            setStatus('Search completed');
+        }
+        renderRow(data);
+    } catch (error) {
+        setStatus(`Error: ${error.message}`, true);
+        resultBody.innerHTML = '<tr><td colspan="11" class="muted">An error occurred while fetching data.</td></tr>';
+    }
+});
