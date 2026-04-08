@@ -21,9 +21,7 @@ class WarehouseJournal(WarehouseBase):
     __tablename__ = "warehouse_journals"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    # print ISSN. Может быть None для online-only журналов.
     issn: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
-    # electronic ISSN. Может быть None если журнал имеет только print версию.
     eissn: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     journal_name: Mapped[str | None] = mapped_column(String, nullable=True)
     country: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -63,5 +61,35 @@ class ArticleCache(WarehouseBase):
     scopus_entry: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     scopus_search_meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     last_checked_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow
+    )
+
+
+class AuthorSearchCache(WarehouseBase):
+    """Кеш результатов поиска по автору.
+
+    Каждая найденная статья хранится отдельной строкой, чтобы можно было
+    переиспользовать результаты без повторного обращения к Scopus API.
+    Кеш привязан к строке запроса (query_author) — при повторном запросе
+    с тем же именем возвращаем закешированные данные.
+    """
+    __tablename__ = "warehouse_author_search_cache"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Нормализованное имя автора — ключ кеша
+    query_author: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    # Сколько всего результатов нашёл Scopus (может быть больше чем сохранено)
+    total_found: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # Поля одной статьи из результатов поиска
+    article_title: Mapped[str | None] = mapped_column(String, nullable=True)
+    issn: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    eissn: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    publication_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    journal_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Список авторов хранится как JSON-массив строк
+    authors: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+    cached_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )
