@@ -46,7 +46,7 @@ WarehouseSessionLocal = sessionmaker(
 
 
 def _migrate_columns() -> None:
-    """Добавляет колонки, которых может не быть в уже существующих БД."""
+    """Добавляет колонки которых может не быть в уже существующих БД."""
     migrations = {
         "warehouse_journals": [
             ("eissn", "VARCHAR"),

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
@@ -15,8 +16,8 @@ if ENV_FILE.exists():
 
 from batch import process_batch
 from db import init_db
-from warehouse_db import init_warehouse_db
-
+from service import search_by_author_core, verify_article_core
+from warehouse_db import init_warehouse_db, WarehouseSessionLocal
 
 app = FastAPI(title="Scientific Publication Verification System")
 WEB_DIR = PROJECT_ROOT / "web"
@@ -49,6 +50,7 @@ def _verify_via_batch(title: str) -> dict:
     }
     return result
 
+
 @app.on_event("startup")
 def on_startup() -> None:
     _load_runtime_environment()
@@ -58,20 +60,59 @@ def on_startup() -> None:
 
 @app.get("/verify")
 def verify(title: str = Query(..., description="Article title to verify")):
-    """Verify one article via the same batch flow as main.py -b.
+    """Верифицировать одну статью по названию.
 
-    Pipeline:
-    - Create a one-line .txt input file for the requested title.
-    - Run batch processing (same core path as main.py -b).
-    - Return first record + paths to generated batch files.
+    Pipeline: Scopus API → ISSN → метрики журнала из warehouse.
     """
     if not title.strip():
         raise HTTPException(status_code=400, detail="Title must not be empty.")
     return _verify_via_batch(title.strip())
 
 
+@app.get("/search/author")
+def search_author(
+    author: str = Query(..., description="Имя автора. Форматы: 'Иванов' или 'Иванов, И.И.'"),
+    limit: int = Query(25, ge=1, le=200, description="Максимальное количество статей (1–200)"),
+    refresh: bool = Query(False, description="Игнорировать кеш и запросить Scopus заново"),
+):
+    """Поиск статей по имени автора.
+
+    Возвращает список статей с метриками журнала (квартиль, SJR, и т.д.)
+    для каждой найденной публикации.
+
+    **Формат имени автора:**
+    - `Иванов` — поиск только по фамилии (широкий, много результатов)
+    - `Иванов, И.И.` — фамилия + инициалы (точнее)
+    - `Ivanov, Ivan` — полное имя на латинице
+
+    **Кеширование:** результаты кешируются в warehouse DB. Параметр
+    `refresh=true` принудительно обновляет кеш из Scopus.
+    """
+    name = author.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Author name must not be empty.")
+
+    session = WarehouseSessionLocal()
+    try:
+        result = search_by_author_core(
+            session=session,
+            author_name=name,
+            max_results=limit,
+            use_cache=not refresh,
+        )
+        session.commit()
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        session.close()
+
+    return result
+
+
 @app.get("/")
 def frontend_index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")
+
 
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
