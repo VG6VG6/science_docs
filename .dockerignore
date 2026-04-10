@@ -1,0 +1,21 @@
+# Ignore Python cache and virtual environment
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+
+# Ignore databases
+# .sqlite
+# .db
+# Если вам нужно переносить базу, не игнорируйте её. Обычно db игнорируют.
+# bin/science_docs.db
+# bin/warehouse.db
+
+# VSCode files
+.vscode/
+
+# Other ignored files
+.DS_Store
