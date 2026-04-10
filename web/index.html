@@ -9,19 +9,61 @@
 </head>
 
 <body>
-    <form action="" class="inputForm" id="inputForm">
-        <div class="formScientific">
-            <label for="title">Enter Title</label>
-            <input type="text" id="title" name="title" required>
-            <button type="submit" class="submitBtn" id="submitBtn">Find</button>
 
+    <form action="" class="inputForm" id="inputForm">
+        <div class="formScientific formMode">
+            <label>Search Mode</label>
+            <div class="customSelect" id="customSearchMode">
+                <div class="selectTrigger" id="searchModeTrigger" tabindex="0">
+                    <span id="searchModeLabel">By title</span>
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="selectIcon"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="selectOptions" id="searchModeOptions">
+                    <div class="selectOption selected" data-value="title">By title</div>
+                    <div class="selectOption" data-value="author">By author</div>
+                </div>
+            </div>
+            <!-- Hidden native select for standard form behavior if needed, but not required since we read values in JS. We'll just define a hidden input -->
+            <input type="hidden" id="searchMode" name="searchMode" value="title">
         </div>
+
+        <div class="formScientific formWide">
+            <label for="queryText" id="queryLabel">Enter Title</label>
+            <input type="text" id="queryText" name="queryText" required>
+        </div>
+
+        <div class="formScientific formSmall authorOnly hidden" id="limitWrap">
+            <label for="limit">Limit</label>
+            <input type="number" id="limit" name="limit" min="1" max="200" value="25">
+        </div>
+
+        <div class="formScientific formSmall authorOnly hidden" id="refreshWrap">
+            <label>Refresh</label>
+            <label class="customCheckbox" for="refresh">
+                <input type="checkbox" id="refresh" name="refresh" class="sr-only">
+                <div class="checkbox-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+            </label>
+        </div>
+
+        <button type="submit" class="submitBtn iconBtn" id="submitBtn" aria-label="Find">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+
+        <button type="button" class="themeToggle iconBtn" id="themeToggle" aria-label="Toggle theme">
+            <!-- Moon Icon -->
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="theme-icon dark-icon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            <!-- Sun Icon -->
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="theme-icon light-icon" style="display: none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
     </form>
     <div class="status" id="status"></div>
     <table>
         <thead>
             <tr>
                 <th>Запрос</th>
+                <th>Authors</th>
                 <th>Scopus Title</th>
                 <th>ISSN / eISSN</th>
                 <th>Год</th>
@@ -36,7 +78,7 @@
         </thead>
         <tbody id="resultBody">
             <tr>
-                <td colspan="11" class="muted">Пока нет данных</td>
+                <td colspan="12" class="muted">Пока нет данных</td>
             </tr>
         </tbody>
     </table>

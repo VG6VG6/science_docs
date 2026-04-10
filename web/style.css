@@ -1,20 +1,57 @@
+:root {
+    --bg: #f8fafc;
+    --text: #1f2937;
+    --panel: #ffffff;
+    --border: #e5e7eb;
+    --input-border: #cbd5e1;
+    --input-bg: #ffffff;
+    --muted: #64748b;
+    --status: #334155;
+    --accent: #0f766e;
+    --accent-hover: #115e59;
+    --header-bg: #0f766e;
+    --header-text: #ffffff;
+    --wipe-bg: #0f172a;
+    --wipe-line: rgba(15, 118, 110, 0.85);
+}
+
+body[data-theme="dark"],
+body.theme-dark {
+    --bg: #0b1220;
+    --text: #dbe4f2;
+    --panel: #111b2e;
+    --border: #23324c;
+    --input-border: #324566;
+    --input-bg: #0f1a2d;
+    --muted: #93a7c6;
+    --status: #b7c6dc;
+    --accent: #2dd4bf;
+    --accent-hover: #14b8a6;
+    --header-bg: #172744;
+    --header-text: #dbe4f2;
+    --wipe-bg: #f8fafc;
+    --wipe-line: rgba(45, 212, 191, 0.9);
+}
+
 body {
     font-family: "Segoe UI", Tahoma, sans-serif;
     margin: 24px;
-    color: #1f2937;
-    background: #f8fafc;
+    color: var(--text);
+    background: var(--bg);
+    transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .inputForm {
     display: flex;
     gap: 12px;
-    align-items: end;
+    align-items: flex-end;
     flex-wrap: wrap;
     margin-bottom: 18px;
-    background: #ffffff;
+    background: var(--panel);
     padding: 14px;
     border-radius: 10px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border);
+    transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .formScientific {
@@ -25,32 +62,273 @@ body {
     flex: 1;
 }
 
-input[type="text"] {
+.formWide {
+    min-width: 240px;
+    flex: 1 1 320px;
+}
+
+.formMode {
+    min-width: 170px;
+    max-width: 190px;
+    flex: 0 0 180px;
+}
+
+.formSmall {
+    min-width: 120px;
+    max-width: 150px;
+    flex: 0 0 auto;
+}
+
+input[type="text"],
+input[type="number"] {
     height: 38px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--input-border);
     border-radius: 8px;
     padding: 0 10px;
     font-size: 14px;
+    background: var(--input-bg);
+    color: var(--text);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.25s ease, color 0.25s ease;
+    box-sizing: border-box;
+}
+
+/* Custom Select Dropdown Options */
+.customSelect {
+    position: relative;
+    user-select: none;
+    height: 38px;
+    box-sizing: border-box;
+}
+
+.selectTrigger {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 36px;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    padding: 0 10px;
+    font-size: 14px;
+    background: var(--input-bg);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.25s ease, color 0.25s ease;
+}
+
+.selectTrigger:hover {
+    border-color: var(--accent);
+}
+
+.selectTrigger:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2);
+}
+
+.selectIcon {
+    transition: transform 0.2s ease;
+    color: var(--muted);
+}
+
+.customSelect.open .selectIcon {
+    transform: rotate(180deg);
+}
+
+.selectOptions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    overflow: hidden;
+}
+
+.customSelect.open .selectOptions {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.selectOption {
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    transition: background-color 0.2s ease, padding-left 0.2s ease, color 0.2s ease;
+}
+
+.selectOption:hover {
+    background-color: var(--input-bg);
+    padding-left: 18px;
+    color: var(--accent);
+}
+
+.selectOption.selected {
+    background-color: var(--accent);
+    color: white;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2);
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+.customCheckbox {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 2px;
+    cursor: pointer;
+}
+
+.checkbox-box {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--input-border);
+    border-radius: 6px;
+    background: var(--input-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.checkbox-box svg {
+    width: 14px;
+    height: 14px;
+    color: white;
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+    transition: stroke-dashoffset 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sr-only:checked + .checkbox-box {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.sr-only:checked + .checkbox-box svg {
+    stroke-dashoffset: 0;
+}
+
+.sr-only:focus-visible + .checkbox-box {
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2);
+    border-color: var(--accent);
+}
+
+.customCheckbox:hover .checkbox-box {
+    border-color: var(--accent);
 }
 
 button {
     height: 38px;
     border: none;
     border-radius: 8px;
-    background: #0f766e;
+    background: var(--accent);
     color: white;
     padding: 0 16px;
     cursor: pointer;
+    transition: background-color 0.2s ease;
+    box-sizing: border-box;
+}
+
+button.iconBtn {
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 button:hover {
-    background: #115e59;
+    background: var(--accent-hover);
+}
+
+.themeToggle {
+    border: 1px solid var(--input-border);
+    background: var(--panel);
+    color: var(--text);
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.themeToggle:hover {
+    background: var(--input-bg);
+    border-color: var(--accent);
+}
+
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *:before,
+html.theme-transitioning *:after {
+    transition: none !important;
+}
+
+::view-transition-group(root) {
+    animation: none;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+html.theme-transitioning::view-transition-old(root) {
+    z-index: 1;
+}
+
+html.theme-transitioning::view-transition-new(root) {
+    z-index: 2;
+    clip-path: polygon(100% 0, 100% 0, 100% 0);
+    animation: revealThemeDiagonalPoly 1500ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes revealThemeDiagonalPoly {
+    0% {
+        clip-path: polygon(100% 0, 100% 0, 100% 0);
+    }
+    100% {
+        clip-path: polygon(100% 0, 100% 300%, -200% 0);
+    }
 }
 
 .status {
     margin: 8px 0 14px;
     font-size: 14px;
-    color: #334155;
+    color: var(--status);
     min-height: 20px;
 }
 
@@ -58,15 +336,16 @@ table {
     width: 100%;
     table-layout: fixed;
     border-collapse: collapse;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    background: var(--panel);
+    border: 1px solid var(--border);
     border-radius: 10px;
     overflow: hidden;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 thead th {
-    background: #0f766e;
-    color: #fff;
+    background: var(--header-bg);
+    color: var(--header-text);
     text-align: left;
     font-weight: 600;
     padding: 10px;
@@ -77,7 +356,7 @@ thead th {
 }
 
 tbody td {
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--border);
     padding: 10px;
     font-size: 14px;
     vertical-align: top;
@@ -87,5 +366,23 @@ tbody td {
 }
 
 .muted {
-    color: #64748b;
+    color: var(--muted);
+}
+
+.hidden {
+    display: none;
+}
+
+@media (max-width: 880px) {
+    .inputForm {
+        align-items: stretch;
+    }
+
+    .formMode,
+    .formSmall,
+    .formWide {
+        min-width: 100%;
+        max-width: none;
+        flex: 1 1 100%;
+    }
 }
