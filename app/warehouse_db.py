@@ -55,6 +55,7 @@ def _migrate_columns() -> None:
             ("scopus_entry", "TEXT"),
             ("scopus_search_meta", "TEXT"),
             ("eissn", "VARCHAR"),
+            ("authors", "TEXT"),
         ],
     }
     with warehouse_engine.begin() as conn:

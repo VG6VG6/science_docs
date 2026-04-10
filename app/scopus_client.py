@@ -18,6 +18,7 @@ class ScopusMetadata:
     eissn: Optional[str]
     publication_year: Optional[int]
     journal_name: Optional[str]
+    authors: List[str] = field(default_factory=list)
     # First hit from search (full Elsevier document entry as returned by API).
     raw_entry: Optional[Dict[str, Any]] = None
     # search-results block without the heavy "entry" list (totals, links, etc.).
@@ -87,15 +88,24 @@ def _build_author_query(author_name: str) -> str:
 
 def _parse_authors(entry: Dict[str, Any]) -> List[str]:
     """Извлекает список авторов из Scopus entry."""
-    authors_raw = entry.get("author", [])
+    # Scopus может возвращать авторов в разных полях
+    authors_raw = entry.get("author") or entry.get("dc:creator") or []
+    
     if not isinstance(authors_raw, list):
         # Иногда Scopus возвращает один объект вместо списка
         authors_raw = [authors_raw]
+    
     result = []
     for a in authors_raw:
-        name = a.get("authname") or a.get("ce:indexed-name") or ""
+        if isinstance(a, dict):
+            name = a.get("authname") or a.get("ce:indexed-name") or ""
+        else:
+            # dc:creator может быть просто строкой
+            name = str(a) if a else ""
+        
         if name:
             result.append(name)
+    
     return result
 
 
@@ -137,7 +147,12 @@ def _scopus_request(params: dict) -> Dict[str, Any]:
         )
 
     try:
-        return resp.json()
+        data = resp.json()
+        print("----- SCOPUS API RESPONSE -----")
+        import json
+        print(json.dumps(data, indent=2))
+        print("-------------------------------")
+        return data
     except ValueError as exc:
         raise ScopusError("Failed to decode Scopus JSON response") from exc
 
@@ -163,6 +178,7 @@ def get_scopus_metadata(query: str) -> Optional[ScopusMetadata]:
         eissn=entry.get("prism:eIssn"),
         publication_year=_extract_year_from_cover_date(entry.get("prism:coverDate")),
         journal_name=entry.get("prism:publicationName"),
+        authors=_parse_authors(entry),
         raw_entry=dict(entry),
         search_meta=search_meta if search_meta else None,
     )
@@ -170,41 +186,65 @@ def get_scopus_metadata(query: str) -> Optional[ScopusMetadata]:
 
 def search_articles_by_author(
     author_name: str,
-    max_results: int = 25,
+    max_results: Optional[int] = None,
 ) -> AuthorSearchResult:
     """Ищет статьи по имени автора в Scopus.
 
     Args:
-        author_name: Имя автора. Форматы:
-            - «Иванов» — только фамилия
-            - «Иванов, И.И.» — фамилия + инициалы (наиболее точно)
-            - «Ivanov, Ivan» — полное имя
-        max_results: Максимальное количество возвращаемых статей (до 200).
+        author_name: Имя автора.
+        max_results: Максимальное количество возвращаемых статей. Если None — извлекаются все.
 
     Returns:
         AuthorSearchResult со списком найденных статей.
     """
-    count = min(max(1, max_results), 200)
-    data = _scopus_request({
-        "query": _build_author_query(author_name),
-        "count": count,
-        # Запрашиваем поле author явно — по умолчанию Scopus его не всегда включает
-        "field": "dc:title,prism:issn,prism:eIssn,prism:coverDate,"
-                 "prism:publicationName,author",
-    })
+    entries = []
+    start = 0
+    total = 0
+    
+    # Scopus API free tier API limit is max 25 per request
+    chunk_size = 25 if max_results is None or max_results > 25 else max_results
 
-    search_results = data.get("search-results") or {}
-    entries = search_results.get("entry", [])
+    while True:
+        data = _scopus_request({
+            "query": _build_author_query(author_name),
+            "count": chunk_size,
+            "start": start,
+            "field": "dc:title,prism:issn,prism:eIssn,prism:coverDate,"
+                     "prism:publicationName,author",
+        })
 
-    # Scopus возвращает {"error": "Result set was empty"} вместо пустого списка
-    if entries and isinstance(entries[0], dict) and "error" in entries[0]:
-        entries = []
+        search_results = data.get("search-results") or {}
+        batch_entries = search_results.get("entry", [])
 
-    total_str = search_results.get("opensearch:totalResults", "0")
-    try:
-        total = int(total_str)
-    except (ValueError, TypeError):
-        total = 0
+        # Scopus возвращает {"error": "Result set was empty"} вместо пустого списка
+        if batch_entries and isinstance(batch_entries[0], dict) and "error" in batch_entries[0]:
+            batch_entries = []
+
+        if not batch_entries:
+            break
+            
+        entries.extend(batch_entries)
+
+        if start == 0:
+            total_str = search_results.get("opensearch:totalResults", "0")
+            try:
+                total = int(total_str)
+            except (ValueError, TypeError):
+                total = 0
+                
+        # Если мы скачали всё что есть или достигли лимита
+        if len(entries) >= total:
+            break
+            
+        if max_results is not None and len(entries) >= max_results:
+            entries = entries[:max_results]
+            break
+            
+        start += len(batch_entries)
+        
+        # Пересчитываем размер следующего куска если есть лимит
+        if max_results is not None:
+            chunk_size = min(25, max_results - len(entries))
 
     articles = [_parse_entry_to_author_article(e) for e in entries]
 

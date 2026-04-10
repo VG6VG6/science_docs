@@ -72,7 +72,7 @@ def verify(title: str = Query(..., description="Article title to verify")):
 @app.get("/search/author")
 def search_author(
     author: str = Query(..., description="Имя автора. Форматы: 'Иванов' или 'Иванов, И.И.'"),
-    limit: int = Query(25, ge=1, le=200, description="Максимальное количество статей (1–200)"),
+    limit: Optional[int] = Query(None, ge=1, description="Максимальное количество статей (если не передано - возвращает все)"),
     refresh: bool = Query(False, description="Игнорировать кеш и запросить Scopus заново"),
 ):
     """Поиск статей по имени автора.

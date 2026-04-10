@@ -58,6 +58,7 @@ def verify_article_core(session: Session, title: str) -> Dict[str, Any]:
             eissn=cached.eissn,
             publication_year=cached.publication_year,
             journal_name=cached.journal_name,
+            authors=cached.authors or [],
             raw_entry=cached.scopus_entry,
             search_meta=cached.scopus_search_meta,
         )
@@ -87,6 +88,7 @@ def verify_article_core(session: Session, title: str) -> Dict[str, Any]:
             "eissn": scopus_data.eissn if scopus_data else None,
             "publication_year": scopus_data.publication_year if scopus_data else None,
             "journal_name": scopus_data.journal_name if scopus_data else None,
+            "authors": scopus_data.authors if scopus_data else [],
         },
         "ranking": ranking,
     }
@@ -95,7 +97,7 @@ def verify_article_core(session: Session, title: str) -> Dict[str, Any]:
 def search_by_author_core(
     session: Session,
     author_name: str,
-    max_results: int = 25,
+    max_results: Optional[int] = None,
     use_cache: bool = True,
 ) -> Dict[str, Any]:
     """Поиск статей по автору с обогащением каждой статьи метриками журнала.
@@ -178,7 +180,7 @@ def verify_article(title: str) -> Dict[str, Any]:
 
 def search_by_author(
     author_name: str,
-    max_results: int = 25,
+    max_results: Optional[int] = None,
     use_cache: bool = True,
 ) -> Dict[str, Any]:
     """Search articles by author name; opens one DB session and commits once."""
