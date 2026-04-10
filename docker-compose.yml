@@ -9,5 +9,5 @@ services:
       # и скачанные отчеты не пропадали при пересоздании контейнера.
       - ./bin:/app/bin
     env_file:
-      - ./bin/info.env
+      - ./info.env
     restart: unless-stopped

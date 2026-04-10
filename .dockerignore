@@ -19,3 +19,5 @@ env/
 
 # Other ignored files
 .DS_Store
+Dockerfile
+bin/
