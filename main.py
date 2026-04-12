@@ -130,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-e", "--environment",
         metavar="ENV",
-        default="bin/info.env",
+        default="./info.env",
         help="Путь к файлу с переменными окружения (по умолчанию: bin/info.env).",
     )
     args = parser.parse_args()
