@@ -54,6 +54,7 @@ def upsert_article_cache(session: Session, query_title: str, meta: ScopusMetadat
     cached.eissn = meta.eissn
     cached.publication_year = meta.publication_year
     cached.journal_name = meta.journal_name
+    cached.authors = meta.authors
     cached.scopus_entry = meta.raw_entry
     cached.scopus_search_meta = meta.search_meta
     cached.last_checked_at = datetime.now(timezone.utc)

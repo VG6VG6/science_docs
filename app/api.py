@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-ENV_FILE = PROJECT_ROOT / "bin" / "info.env"
+ENV_FILE = PROJECT_ROOT / "info.env"
 if ENV_FILE.exists():
     load_dotenv(ENV_FILE)
 
@@ -25,7 +25,7 @@ REQUESTS_DIR = PROJECT_ROOT / "bin" / "requests"
 
 
 def _load_runtime_environment() -> None:
-    env_file = PROJECT_ROOT / "bin" / "info.env"
+    env_file = PROJECT_ROOT / "info.env"
     if env_file.exists():
         load_dotenv(env_file)
 
@@ -72,7 +72,7 @@ def verify(title: str = Query(..., description="Article title to verify")):
 @app.get("/search/author")
 def search_author(
     author: str = Query(..., description="Имя автора. Форматы: 'Иванов' или 'Иванов, И.И.'"),
-    limit: int = Query(25, ge=1, le=200, description="Максимальное количество статей (1–200)"),
+    limit: Optional[int] = Query(None, ge=1, description="Максимальное количество статей (если не передано - возвращает все)"),
     refresh: bool = Query(False, description="Игнорировать кеш и запросить Scopus заново"),
 ):
     """Поиск статей по имени автора.
