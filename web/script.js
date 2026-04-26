@@ -56,7 +56,7 @@ function getPreferredTheme() {
     if (storedTheme === 'light' || storedTheme === 'dark') {
         return storedTheme;
     }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'dark';
 }
 
 function applyTheme(theme) {
@@ -67,11 +67,11 @@ function applyTheme(theme) {
         if (theme === 'dark') {
             themeToggle.querySelector('.dark-icon').style.display = 'none';
             themeToggle.querySelector('.light-icon').style.display = 'block';
-            themeToggle.setAttribute('aria-label', 'Light theme');
+            themeToggle.setAttribute('aria-label', 'Светлая тема');
         } else {
             themeToggle.querySelector('.dark-icon').style.display = 'block';
             themeToggle.querySelector('.light-icon').style.display = 'none';
-            themeToggle.setAttribute('aria-label', 'Dark theme');
+            themeToggle.setAttribute('aria-label', 'Тёмная тема');
         }
     }
 }
@@ -113,14 +113,14 @@ function safe(value) {
 
 function setStatus(text, isError = false) {
     statusEl.textContent = text;
-    statusEl.style.color = isError ? "#b91c1c" : "#334155";
+    statusEl.classList.toggle('error', isError);
 }
 
 function formatWhiteList(value) {
     if (value === null || value === undefined) {
         return "-";
     }
-    return value ? "Yes" : "No";
+    return value ? "Да" : "Нет";
 }
 
 function renderTitleResult(data) {
@@ -131,20 +131,20 @@ function renderTitleResult(data) {
         ? scopus.authors.join('; ') 
         : '-';
     
-    currentTableHeaders = ['Запрос', 'Authors', 'Scopus Title', 'ISSN / eISSN', 'Год', 'Журнал', 'Quartile', 'SJR', 'H-index', 'Country', 'White List', 'VAK'];
+    currentTableHeaders = ['Запрос', 'Авторы', 'Название в Scopus', 'ISSN / eISSN', 'Год', 'Журнал', 'Квартиль', 'SJR', 'Индекс Хирша', 'Страна', 'Белый список', 'Категория ВАК'];
     currentTableRows = [{
         'Запрос': data.query_title,
-        'Authors': authors,
-        'Scopus Title': safe(scopus.title),
+        'Авторы': authors,
+        'Название в Scopus': safe(scopus.title),
         'ISSN / eISSN': `${safe(scopus.issn)} / ${safe(scopus.eissn)}`,
         'Год': safe(scopus.publication_year),
         'Журнал': safe(scopus.journal_name),
-        'Quartile': safe(ranking.quartile),
+        'Квартиль': safe(ranking.quartile),
         'SJR': safe(ranking.sjr),
-        'H-index': safe(ranking.h_index),
-        'Country': safe(ranking.country),
-        'White List': formatWhiteList(ranking.is_white_list),
-        'VAK': safe(ranking.vak_category)
+        'Индекс Хирша': safe(ranking.h_index),
+        'Страна': safe(ranking.country),
+        'Белый список': formatWhiteList(ranking.is_white_list),
+        'Категория ВАК': safe(ranking.vak_category)
     }];
     
     exportBtn.style.display = 'block';
@@ -176,7 +176,7 @@ function renderAuthorResult(data) {
         return;
     }
 
-    currentTableHeaders = ['Запрос', 'Authors', 'Scopus Title', 'ISSN / eISSN', 'Год', 'Журнал', 'Quartile', 'SJR', 'H-index', 'Country', 'White List', 'VAK'];
+    currentTableHeaders = ['Запрос', 'Авторы', 'Название в Scopus', 'ISSN / eISSN', 'Год', 'Журнал', 'Квартиль', 'SJR', 'Индекс Хирша', 'Страна', 'Белый список', 'Категория ВАК'];
     currentTableRows = articles.map((article) => {
         const ranking = article.ranking || {};
         let authorsStr = Array.isArray(article.authors) && article.authors.length > 0
@@ -187,17 +187,17 @@ function renderAuthorResult(data) {
         }
         return {
             'Запрос': data.query_author,
-            'Authors': authorsStr,
-            'Scopus Title': safe(article.title),
+            'Авторы': authorsStr,
+            'Название в Scopus': safe(article.title),
             'ISSN / eISSN': `${safe(article.issn)} / ${safe(article.eissn)}`,
             'Год': safe(article.publication_year),
             'Журнал': safe(article.journal_name),
-            'Quartile': safe(ranking.quartile),
+            'Квартиль': safe(ranking.quartile),
             'SJR': safe(ranking.sjr),
-            'H-index': safe(ranking.h_index),
-            'Country': safe(ranking.country),
-            'White List': formatWhiteList(ranking.is_white_list),
-            'VAK': safe(ranking.vak_category)
+            'Индекс Хирша': safe(ranking.h_index),
+            'Страна': safe(ranking.country),
+            'Белый список': formatWhiteList(ranking.is_white_list),
+            'Категория ВАК': safe(ranking.vak_category)
         };
     });
     
@@ -234,8 +234,8 @@ function updateModeUI() {
     const mode = searchModeInput.value;
     const isAuthorMode = mode === 'author';
 
-    queryLabel.textContent = isAuthorMode ? 'Enter Author Name' : 'Enter Title';
-    queryInput.placeholder = isAuthorMode ? 'Ivanov or Ivanov, I.I.' : 'Article title';
+    queryLabel.textContent = isAuthorMode ? 'Введите имя автора' : 'Введите название';
+    queryInput.placeholder = isAuthorMode ? 'Иванов или Иванов, И.И.' : 'Название статьи';
     refreshWrap.classList.toggle('hidden', !isAuthorMode);
 }
 
@@ -286,11 +286,11 @@ form.addEventListener('submit', async (e) => {
     const query = queryInput.value.trim();
 
     if (!query) {
-        setStatus(mode === 'author' ? 'Please enter an author name' : 'Please enter a title', true);
+        setStatus(mode === 'author' ? 'Введите имя автора' : 'Введите название статьи', true);
         return;
     }
 
-    setStatus('Searching...');
+    setStatus('Поиск...');
     resultBody.innerHTML = '<tr><td colspan="12" class="muted">Получаем данные с сервера...</td></tr>';
 
     try {
@@ -304,7 +304,7 @@ form.addEventListener('submit', async (e) => {
 
         const response = await fetch(url);
         if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
+            throw new Error(`Ошибка сервера: ${response.status}`);
         }
 
         const data = await response.json();
@@ -315,24 +315,24 @@ form.addEventListener('submit', async (e) => {
 
         if (mode === 'author') {
             if (data.scopus_error) {
-                setStatus(`Scopus error: ${data.scopus_error}`, true);
+                setStatus(`Ошибка Scopus: ${data.scopus_error}`, true);
             } else {
-                const cacheMark = data.from_cache ? ' (cache)' : '';
-                setStatus(`Found ${safe(data.returned)} of ${safe(data.total_found)}${cacheMark}`);
+                const cacheMark = data.from_cache ? ' (из кеша)' : '';
+                setStatus(`Найдено ${safe(data.returned)} из ${safe(data.total_found)}${cacheMark}`);
             }
             renderAuthorResult(data);
             return;
         }
 
         if (data.scopus_error) {
-            setStatus(`Scopus error: ${data.scopus_error}`, true);
+            setStatus(`Ошибка Scopus: ${data.scopus_error}`, true);
         } else {
-            setStatus('Search completed');
+            setStatus('Поиск завершён');
         }
         renderTitleResult(data);
     } catch (error) {
-        setStatus(`Error: ${error.message}`, true);
-        resultBody.innerHTML = '<tr><td colspan="12" class="muted">An error occurred while fetching data.</td></tr>';
+        setStatus(`Ошибка: ${error.message}`, true);
+        resultBody.innerHTML = '<tr><td colspan="12" class="muted">Произошла ошибка при получении данных.</td></tr>';
         exportBtn.style.display = 'none';
     }
 });

@@ -1,44 +1,153 @@
 :root {
-    --bg: #f8fafc;
-    --text: #1f2937;
+    --bg: #f5f7fb;
+    --bg-secondary: #e8edf7;
+    --text: #111827;
+    --text-soft: #4b5563;
     --panel: #ffffff;
-    --border: #e5e7eb;
+    --panel-alt: #f8fafc;
+    --border: #e2e8f0;
     --input-border: #cbd5e1;
     --input-bg: #ffffff;
     --muted: #64748b;
     --status: #334155;
-    --accent: #0f766e;
-    --accent-hover: #115e59;
-    --header-bg: #0f766e;
-    --header-text: #ffffff;
+    --status-error: #ef4444;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --header-bg: rgba(255, 255, 255, 0.78);
+    --header-text: #0f172a;
+    --ring: rgba(37, 99, 235, 0.35);
+    --shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.08);
+    --shadow-hard: 0 14px 34px rgba(15, 23, 42, 0.14);
     --wipe-bg: #0f172a;
-    --wipe-line: rgba(15, 118, 110, 0.85);
+    --wipe-line: rgba(37, 99, 235, 0.85);
 }
 
 body[data-theme="dark"],
 body.theme-dark {
-    --bg: #0b1220;
-    --text: #dbe4f2;
-    --panel: #111b2e;
-    --border: #23324c;
-    --input-border: #324566;
-    --input-bg: #0f1a2d;
-    --muted: #93a7c6;
-    --status: #b7c6dc;
-    --accent: #2dd4bf;
-    --accent-hover: #14b8a6;
-    --header-bg: #172744;
-    --header-text: #dbe4f2;
+    --bg: #090d14;
+    --bg-secondary: #121826;
+    --text: #e5e7eb;
+    --text-soft: #a7b1c2;
+    --panel: #111827;
+    --panel-alt: #0f172a;
+    --border: #1f2937;
+    --input-border: #334155;
+    --input-bg: #0b1220;
+    --muted: #94a3b8;
+    --status: #cbd5e1;
+    --status-error: #f87171;
+    --accent: #f59e0b;
+    --accent-hover: #d97706;
+    --header-bg: rgba(17, 24, 39, 0.74);
+    --header-text: #f8fafc;
+    --ring: rgba(245, 158, 11, 0.35);
+    --shadow-soft: 0 14px 34px rgba(2, 6, 23, 0.45);
+    --shadow-hard: 0 20px 42px rgba(2, 6, 23, 0.55);
     --wipe-bg: #f8fafc;
-    --wipe-line: rgba(45, 212, 191, 0.9);
+    --wipe-line: rgba(245, 158, 11, 0.9);
+}
+
+* {
+    box-sizing: border-box;
 }
 
 body {
-    font-family: "Segoe UI", Tahoma, sans-serif;
-    margin: 24px;
+    font-family: "DM Sans", "Manrope", "Segoe UI", sans-serif;
+    margin: 0;
+    min-height: 100vh;
     color: var(--text);
-    background: var(--bg);
+    background:
+        radial-gradient(circle at 8% -10%, rgba(245, 158, 11, 0.17), transparent 35%),
+        radial-gradient(circle at 88% -15%, rgba(59, 130, 246, 0.13), transparent 32%),
+        linear-gradient(165deg, var(--bg) 0%, var(--bg-secondary) 100%);
     transition: background-color 0.25s ease, color 0.25s ease;
+    padding: 24px;
+}
+
+body > .appHeader,
+body > .appMain {
+    max-width: 1400px;
+    margin-inline: auto;
+}
+
+.appHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--header-bg);
+    color: var(--header-text);
+    backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-soft);
+    margin-bottom: 18px;
+}
+
+.brandBlock {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.logoSlot {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px dashed color-mix(in srgb, var(--accent) 64%, var(--border));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-weight: 700;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    flex: 0 0 auto;
+}
+
+.brandText {
+    min-width: 0;
+}
+
+.brandText h1 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+}
+
+.brandText p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--text-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.appMain {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
+
+.searchCard,
+.tableCard {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 94%, transparent), var(--panel-alt));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow-soft);
+}
+
+.searchCard {
+    padding: 16px;
+}
+
+.tableCard {
+    padding: 10px;
 }
 
 .inputForm {
@@ -46,19 +155,14 @@ body {
     gap: 12px;
     align-items: flex-end;
     flex-wrap: wrap;
-    margin-bottom: 18px;
-    background: var(--panel);
-    padding: 14px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    transition: background-color 0.25s ease, border-color 0.25s ease;
+    margin-bottom: 14px;
 }
 
 .formScientific {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    min-width: 320px;
+    min-width: 300px;
     flex: 1;
 }
 
@@ -68,9 +172,9 @@ body {
 }
 
 .formMode {
-    min-width: 170px;
-    max-width: 190px;
-    flex: 0 0 180px;
+    min-width: 180px;
+    max-width: 220px;
+    flex: 0 0 200px;
 }
 
 .formSmall {
@@ -81,10 +185,10 @@ body {
 
 input[type="text"],
 input[type="number"] {
-    height: 38px;
+    height: 42px;
     border: 1px solid var(--input-border);
-    border-radius: 8px;
-    padding: 0 10px;
+    border-radius: 10px;
+    padding: 0 12px;
     font-size: 14px;
     background: var(--input-bg);
     color: var(--text);
@@ -96,7 +200,7 @@ input[type="number"] {
 .customSelect {
     position: relative;
     user-select: none;
-    height: 38px;
+    height: 42px;
     box-sizing: border-box;
 }
 
@@ -105,10 +209,10 @@ input[type="number"] {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 36px;
+    height: 42px;
     border: 1px solid var(--input-border);
-    border-radius: 8px;
-    padding: 0 10px;
+    border-radius: 10px;
+    padding: 0 12px;
     font-size: 14px;
     background: var(--input-bg);
     color: var(--text);
@@ -123,7 +227,7 @@ input[type="number"] {
 .selectTrigger:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2);
+    box-shadow: 0 0 0 3px var(--ring);
 }
 
 .selectIcon {
@@ -142,8 +246,8 @@ input[type="number"] {
     right: 0;
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: var(--shadow-hard);
     z-index: 50;
     opacity: 0;
     visibility: hidden;
@@ -168,7 +272,7 @@ input[type="number"] {
 
 .selectOption:hover {
     background-color: var(--input-bg);
-    padding-left: 18px;
+    padding-left: 16px;
     color: var(--accent);
 }
 
@@ -181,7 +285,7 @@ input[type="text"]:focus,
 input[type="number"]:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2);
+    box-shadow: 0 0 0 3px var(--ring);
 }
 
 .sr-only {
@@ -197,7 +301,7 @@ input[type="number"]:focus {
 }
 
 .customCheckbox {
-    height: 38px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -206,8 +310,8 @@ input[type="number"]:focus {
 }
 
 .checkbox-box {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border: 2px solid var(--input-border);
     border-radius: 6px;
     background: var(--input-bg);
@@ -237,7 +341,7 @@ input[type="number"]:focus {
 }
 
 .sr-only:focus-visible + .checkbox-box {
-    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2);
+    box-shadow: 0 0 0 3px var(--ring);
     border-color: var(--accent);
 }
 
@@ -246,14 +350,16 @@ input[type="number"]:focus {
 }
 
 button {
-    height: 38px;
+    height: 42px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     background: var(--accent);
-    color: white;
-    padding: 0 16px;
+    color: #ffffff;
+    font-weight: 700;
+    padding: 0 18px;
+    letter-spacing: 0.01em;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.2s ease;
     box-sizing: border-box;
 }
 
@@ -266,15 +372,16 @@ button.iconBtn {
 
 button:hover {
     background: var(--accent-hover);
+    transform: translateY(-1px);
 }
 
 .themeToggle {
     border: 1px solid var(--input-border);
-    background: var(--panel);
+    background: color-mix(in srgb, var(--panel) 88%, transparent);
     color: var(--text);
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -326,25 +433,41 @@ html.theme-transitioning::view-transition-new(root) {
 }
 
 .status {
-    margin: 8px 0 14px;
+    margin: 4px 0 14px;
     font-size: 14px;
     color: var(--status);
     min-height: 20px;
 }
 
+.status.error {
+    color: var(--status-error);
+}
+
+.exportRow {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.tableWrap {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 12px;
+}
+
 table {
     width: 100%;
+    min-width: 980px;
     table-layout: fixed;
     border-collapse: collapse;
-    background: var(--panel);
+    background: color-mix(in srgb, var(--panel) 90%, transparent);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 thead th {
-    background: var(--header-bg);
+    background: color-mix(in srgb, var(--accent) 24%, var(--panel));
     color: var(--header-text);
     text-align: left;
     font-weight: 600;
@@ -373,7 +496,40 @@ tbody td {
     display: none;
 }
 
+@media (max-width: 1140px) {
+    body {
+        padding: 18px;
+    }
+
+    table {
+        min-width: 860px;
+    }
+}
+
 @media (max-width: 880px) {
+    body {
+        padding: 12px;
+    }
+
+    .appHeader {
+        padding: 12px;
+        border-radius: 14px;
+        gap: 10px;
+    }
+
+    .brandText h1 {
+        font-size: 16px;
+    }
+
+    .brandText p {
+        font-size: 12px;
+    }
+
+    .searchCard,
+    .tableCard {
+        border-radius: 14px;
+    }
+
     .inputForm {
         align-items: stretch;
     }
@@ -384,5 +540,118 @@ tbody td {
         min-width: 100%;
         max-width: none;
         flex: 1 1 100%;
+    }
+
+    .submitBtn {
+        width: 100%;
+    }
+
+    table {
+        min-width: 720px;
+    }
+}
+
+@media (max-width: 680px) {
+    .appHeader {
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .brandBlock {
+        width: auto;
+        align-items: center;
+        gap: 0;
+    }
+
+    .logoSlot {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+    }
+
+    .brandText {
+        display: none;
+    }
+
+    .themeToggle {
+        margin-left: 0;
+    }
+
+    .searchCard {
+        padding: 12px;
+    }
+
+    .tableCard {
+        padding: 6px;
+    }
+
+    .tableWrap {
+        overflow: visible;
+    }
+
+    table {
+        min-width: 100%;
+        border: 0;
+        background: transparent;
+    }
+
+    thead {
+        display: none;
+    }
+
+    tbody,
+    tr,
+    td {
+        display: block;
+        width: 100%;
+    }
+
+    tbody tr {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--panel) 94%, transparent);
+        margin-bottom: 10px;
+        padding: 6px 8px;
+        box-shadow: var(--shadow-soft);
+    }
+
+    tbody td {
+        border-top: 0;
+        padding: 7px 4px;
+        display: grid;
+        grid-template-columns: minmax(110px, 130px) 1fr;
+        gap: 10px;
+        align-items: start;
+        font-size: 13px;
+    }
+
+    tbody td::before {
+        color: var(--muted);
+        font-weight: 600;
+        content: "";
+    }
+
+    tbody td:nth-child(1)::before { content: "Запрос"; }
+    tbody td:nth-child(2)::before { content: "Авторы"; }
+    tbody td:nth-child(3)::before { content: "Название"; }
+    tbody td:nth-child(4)::before { content: "ISSN/eISSN"; }
+    tbody td:nth-child(5)::before { content: "Год"; }
+    tbody td:nth-child(6)::before { content: "Журнал"; }
+    tbody td:nth-child(7)::before { content: "Квартиль"; }
+    tbody td:nth-child(8)::before { content: "SJR"; }
+    tbody td:nth-child(9)::before { content: "Индекс Хирша"; }
+    tbody td:nth-child(10)::before { content: "Страна"; }
+    tbody td:nth-child(11)::before { content: "Белый список"; }
+    tbody td:nth-child(12)::before { content: "ВАК"; }
+
+    tbody td[colspan] {
+        display: block;
+        text-align: center;
+        padding: 10px 6px;
+    }
+
+    tbody td[colspan]::before {
+        content: none;
     }
 }
