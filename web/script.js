@@ -24,7 +24,7 @@ function exportToCSV() {
     }
 
     // Создаём CSV (добавляем BOM для Excel и используем точку с запятой как разделитель)
-    const headers = currentTableHeaders;
+    const headers = currentTableHeaders.filter(h => h !== 'Запрос');
     const rows = currentTableRows;
     
     let csv = '\ufeff' + headers.map(h => `"${h.replace(/"/g, '""')}"`).join(';') + '\n';
@@ -131,9 +131,8 @@ function renderTitleResult(data) {
         ? scopus.authors.join('; ') 
         : '-';
     
-    currentTableHeaders = ['Запрос', 'Авторы', 'Название в Scopus', 'ISSN / eISSN', 'Год', 'Журнал', 'Квартиль', 'SJR', 'Индекс Хирша', 'Страна', 'Белый список', 'Категория ВАК'];
+    currentTableHeaders = ['Авторы', 'Название в Scopus', 'ISSN / eISSN', 'Год', 'Журнал', 'Квартиль', 'SJR', 'Индекс Хирша', 'Страна', 'Белый список', 'Категория ВАК'];
     currentTableRows = [{
-        'Запрос': data.query_title,
         'Авторы': authors,
         'Название в Scopus': safe(scopus.title),
         'ISSN / eISSN': `${safe(scopus.issn)} / ${safe(scopus.eissn)}`,
@@ -176,17 +175,16 @@ function renderAuthorResult(data) {
         return;
     }
 
-    currentTableHeaders = ['Запрос', 'Авторы', 'Название в Scopus', 'ISSN / eISSN', 'Год', 'Журнал', 'Квартиль', 'SJR', 'Индекс Хирша', 'Страна', 'Белый список', 'Категория ВАК'];
+    currentTableHeaders = ['Авторы', 'Название в Scopus', 'ISSN / eISSN', 'Год', 'Журнал', 'Квартиль', 'SJR', 'Индекс Хирша', 'Страна', 'Белый список', 'Категория ВАК'];
     currentTableRows = articles.map((article) => {
         const ranking = article.ranking || {};
         let authorsStr = Array.isArray(article.authors) && article.authors.length > 0
             ? article.authors.join('; ')
             : safe(article.authors);
-        if (authorsStr === "-") {
+        if (!authorsStr || authorsStr === "-") {
             authorsStr = data.query_author;
         }
         return {
-            'Запрос': data.query_author,
             'Авторы': authorsStr,
             'Название в Scopus': safe(article.title),
             'ISSN / eISSN': `${safe(article.issn)} / ${safe(article.eissn)}`,
