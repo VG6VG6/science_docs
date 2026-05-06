@@ -131,7 +131,7 @@ function renderTitleResult(data) {
         ? scopus.authors.join('; ') 
         : '-';
     
-    currentTableHeaders = ['Авторы', 'Название в Scopus', 'ISSN / eISSN', 'Год', 'Журнал', 'Квартиль', 'SJR', 'Индекс Хирша', 'Страна', 'Белый список', 'Категория ВАК'];
+    currentTableHeaders = ['Авторы', 'Название в Scopus', 'ISSN / eISSN', 'Год', 'Журнал', 'Квартиль', 'SJR', 'Страна', 'Белый список', 'Категория ВАК'];
     currentTableRows = [{
         'Авторы': authors,
         'Название в Scopus': safe(scopus.title),
@@ -140,7 +140,6 @@ function renderTitleResult(data) {
         'Журнал': safe(scopus.journal_name),
         'Квартиль': safe(ranking.quartile),
         'SJR': safe(ranking.sjr),
-        'Индекс Хирша': safe(ranking.h_index),
         'Страна': safe(ranking.country),
         'Белый список': formatWhiteList(ranking.is_white_list),
         'Категория ВАК': safe(ranking.vak_category)
@@ -158,7 +157,6 @@ function renderTitleResult(data) {
           <td>${safe(scopus.journal_name)}</td>
           <td>${safe(ranking.quartile)}</td>
           <td>${safe(ranking.sjr)}</td>
-          <td>${safe(ranking.h_index)}</td>
           <td>${safe(ranking.country)}</td>
           <td>${formatWhiteList(ranking.is_white_list)}</td>
           <td>${safe(ranking.vak_category)}</td>
@@ -170,12 +168,12 @@ function renderAuthorResult(data) {
     const articles = Array.isArray(data.articles) ? data.articles : [];
 
     if (!articles.length) {
-        resultBody.innerHTML = '<tr><td colspan="12" class="muted">Статьи по автору не найдены.</td></tr>';
+        resultBody.innerHTML = '<tr><td colspan="11" class="muted">Статьи по автору не найдены.</td></tr>';
         exportBtn.style.display = 'none';
         return;
     }
 
-    currentTableHeaders = ['Авторы', 'Название в Scopus', 'ISSN / eISSN', 'Год', 'Журнал', 'Квартиль', 'SJR', 'Индекс Хирша', 'Страна', 'Белый список', 'Категория ВАК'];
+    currentTableHeaders = ['Авторы', 'Название в Scopus', 'ISSN / eISSN', 'Год', 'Журнал', 'Квартиль', 'SJR', 'Страна', 'Белый список', 'Категория ВАК'];
     currentTableRows = articles.map((article) => {
         const ranking = article.ranking || {};
         let authorsStr = Array.isArray(article.authors) && article.authors.length > 0
@@ -192,7 +190,6 @@ function renderAuthorResult(data) {
             'Журнал': safe(article.journal_name),
             'Квартиль': safe(ranking.quartile),
             'SJR': safe(ranking.sjr),
-            'Индекс Хирша': safe(ranking.h_index),
             'Страна': safe(ranking.country),
             'Белый список': formatWhiteList(ranking.is_white_list),
             'Категория ВАК': safe(ranking.vak_category)
@@ -206,20 +203,19 @@ function renderAuthorResult(data) {
         let authorsStr = Array.isArray(article.authors) && article.authors.length > 0
             ? article.authors.join('; ')
             : safe(article.authors);
-        if (authorsStr === "-") {
+        if (!authorsStr || authorsStr === "-") {
             authorsStr = data.query_author;
         }
         return `
             <tr>
                 <td>${safe(data.query_author)}</td>
-                <td>${safe(data.query_author)}</td>
+                <td>${authorsStr}</td>
                 <td>${safe(article.title)}</td>
                 <td>${safe(article.issn)} / ${safe(article.eissn)}</td>
                 <td>${safe(article.publication_year)}</td>
                 <td>${safe(article.journal_name)}</td>
                 <td>${safe(ranking.quartile)}</td>
                 <td>${safe(ranking.sjr)}</td>
-                <td>${safe(ranking.h_index)}</td>
                 <td>${safe(ranking.country)}</td>
                 <td>${formatWhiteList(ranking.is_white_list)}</td>
                 <td>${safe(ranking.vak_category)}</td>
@@ -289,7 +285,7 @@ form.addEventListener('submit', async (e) => {
     }
 
     setStatus('Поиск...');
-    resultBody.innerHTML = '<tr><td colspan="12" class="muted">Получаем данные с сервера...</td></tr>';
+    resultBody.innerHTML = '<tr><td colspan="11" class="muted">Получаем данные с сервера...</td></tr>';
 
     try {
         let url;
@@ -330,7 +326,7 @@ form.addEventListener('submit', async (e) => {
         renderTitleResult(data);
     } catch (error) {
         setStatus(`Ошибка: ${error.message}`, true);
-        resultBody.innerHTML = '<tr><td colspan="12" class="muted">Произошла ошибка при получении данных.</td></tr>';
+        resultBody.innerHTML = '<tr><td colspan="11" class="muted">Произошла ошибка при получении данных.</td></tr>';
         exportBtn.style.display = 'none';
     }
 });
