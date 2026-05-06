@@ -456,7 +456,7 @@ html.theme-transitioning::view-transition-new(root) {
 
 table {
     width: 100%;
-    min-width: 980px;
+    min-width: 900px;
     table-layout: fixed;
     border-collapse: collapse;
     background: color-mix(in srgb, var(--panel) 90%, transparent);
@@ -471,21 +471,42 @@ thead th {
     color: var(--header-text);
     text-align: left;
     font-weight: 600;
-    padding: 10px;
-    font-size: 14px;
+    padding: clamp(8px, 0.8vw + 4px, 12px);
+    font-size: clamp(12px, 0.4vw + 10px, 14px);
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
+    line-height: 1.25;
 }
 
 tbody td {
     border-top: 1px solid var(--border);
-    padding: 10px;
-    font-size: 14px;
+    padding: clamp(8px, 0.8vw + 4px, 12px);
+    font-size: clamp(12px, 0.4vw + 10px, 14px);
     vertical-align: top;
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
+    line-height: 1.35;
+}
+
+@media (min-width: 681px) {
+    tbody tr:nth-child(even) td {
+        background: color-mix(in srgb, var(--panel) 94%, var(--bg));
+    }
+}
+
+thead th:nth-child(5),
+tbody td:nth-child(5),
+thead th:nth-child(7),
+tbody td:nth-child(7),
+thead th:nth-child(8),
+tbody td:nth-child(8),
+thead th:nth-child(10),
+tbody td:nth-child(10),
+thead th:nth-child(11),
+tbody td:nth-child(11) {
+    text-align: center;
 }
 
 .muted {
@@ -502,7 +523,7 @@ tbody td {
     }
 
     table {
-        min-width: 860px;
+        min-width: 820px;
     }
 }
 
@@ -547,7 +568,7 @@ tbody td {
     }
 
     table {
-        min-width: 720px;
+        min-width: 680px;
     }
 }
 
@@ -640,10 +661,9 @@ tbody td {
     tbody td:nth-child(6)::before { content: "Журнал"; }
     tbody td:nth-child(7)::before { content: "Квартиль"; }
     tbody td:nth-child(8)::before { content: "SJR"; }
-    tbody td:nth-child(9)::before { content: "Индекс Хирша"; }
-    tbody td:nth-child(10)::before { content: "Страна"; }
-    tbody td:nth-child(11)::before { content: "Белый список"; }
-    tbody td:nth-child(12)::before { content: "ВАК"; }
+    tbody td:nth-child(9)::before { content: "Страна"; }
+    tbody td:nth-child(10)::before { content: "Белый список"; }
+    tbody td:nth-child(11)::before { content: "ВАК"; }
 
     tbody td[colspan] {
         display: block;
