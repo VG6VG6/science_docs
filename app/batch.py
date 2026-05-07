@@ -39,11 +39,17 @@ def _load_titles_from_xlsx(path: Path) -> list[str]:
     return titles
 
 
-def process_batch(input_path: str, output_path: str = "report.json") -> List[Dict[str, Any]]:
+def process_batch(
+    input_path: str,
+    output_path: str = "report.json",
+    max_results: int = 25,
+) -> List[Dict[str, Any]]:
     """Process a list of article titles from .txt or .xlsx and write JSON report."""
     # Ensure optional columns (is_white_list, vak_category) exist before querying.
     init_db()
     init_warehouse_db()
+
+    max_results = min(max(1, max_results), 200)
 
     path = Path(input_path)
     if not path.exists():
@@ -61,7 +67,9 @@ def process_batch(input_path: str, output_path: str = "report.json") -> List[Dic
     session = WarehouseSessionLocal()
     try:
         for i, title in enumerate(titles):
-            results.append(verify_article_core(session, title))
+            results.extend(
+                verify_article_core(session, title, max_results=max_results)
+            )
             if (i + 1) % _BATCH_COMMIT_EVERY == 0:
                 session.commit()
         session.commit()
@@ -89,7 +97,13 @@ if __name__ == "__main__":
         default="report.json",
         help="Path to output JSON report (default: report.json).",
     )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=25,
+        help="Max Scopus search results per title (1–200, default: 25).",
+    )
     args = parser.parse_args()
 
-    process_batch(args.input_path, args.output_path)
+    process_batch(args.input_path, args.output_path, max_results=args.limit)
 

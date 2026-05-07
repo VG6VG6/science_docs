@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 # Корень проекта — там, где лежит этот файл
 PROJECT_ROOT = Path(__file__).resolve().parent
 DB_PATH = PROJECT_ROOT / "bin" / "science_docs.db"
-CSV_DIR = PROJECT_ROOT
+CSV_DIR = PROJECT_ROOT / "csv_files"
 
 
 def update_science_docs_db() -> None:
@@ -26,7 +26,7 @@ def update_science_docs_db() -> None:
     conn = sqlite3.connect(DB_PATH)
     total_in_db = 0
 
-    for year in range(2020, 2025):
+    for year in range(2020, 2025 + 1):
         csv_path = CSV_DIR / f"scimagojr {year}.csv"
         if not csv_path.exists():
             print(f"⚠️  Файл {csv_path.name} не найден, пропускаю.")
@@ -128,6 +128,12 @@ if __name__ == "__main__":
         help="Путь к выходному JSON-отчёту для --batch (по умолчанию: report.json).",
     )
     parser.add_argument(
+        "--limit",
+        type=int,
+        default=25,
+        help="Макс. совпадений Scopus на один заголовок для --batch (1–200, по умолчанию: 25).",
+    )
+    parser.add_argument(
         "-e", "--environment",
         metavar="ENV",
         default="./info.env",
@@ -155,8 +161,8 @@ if __name__ == "__main__":
     if args.batch:
         print(f"▶ Batch-обработка файла: {args.batch}")
         from app.batch import process_batch
-        results = process_batch(args.batch, args.output)
-        print(f"✅ Обработано статей: {len(results)}. Отчёт: {args.output}\n")
+        results = process_batch(args.batch, args.output, max_results=args.limit)
+        print(f"✅ Строк в отчёте: {len(results)}. Отчёт: {args.output}\n")
 
     if not any([args.update, args.refresh_warehouse, args.batch]):
         parser.print_help()

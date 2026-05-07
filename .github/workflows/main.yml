@@ -1,0 +1,38 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - fix_front1   # или master, если основная ветка называется master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+          
+      - name: Debug SSH key
+        run: |
+            head -1 ~/.ssh/id_rsa
+            wc -l ~/.ssh/id_rsa
+            ssh-keygen -l -f ~/.ssh/id_rsa
+            
+      - name: Copy project files to server
+        run: |
+          rsync -avz --no-times --delete --exclude='.git' --exclude='.github' --exclude='info.env' --exclude='bin' --exclude='csv_files' \
+            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.SERVER_PATH }}/
+
+      - name: Build and restart Docker container on server
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "
+            cd ${{ secrets.SERVER_PATH }} &&
+            docker compose down || true &&
+            docker compose up -d --build
+          "

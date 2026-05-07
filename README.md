@@ -84,7 +84,7 @@ pip install -r requirements.txt
 ```
 3. Запустите сервер (FastAPI/Uvicorn):
 ```bash
-uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload --app-dir app
+uvicorn api:app --host 0.0.0.0 --port 8000 --reload --app-dir app
 ```
 
 ---
