@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 # Корень проекта — там, где лежит этот файл
 PROJECT_ROOT = Path(__file__).resolve().parent
 DB_PATH = PROJECT_ROOT / "bin" / "science_docs.db"
-CSV_DIR = PROJECT_ROOT
+CSV_DIR = PROJECT_ROOT / "csv_files"
 
 
 def update_science_docs_db() -> None:
@@ -136,7 +136,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-e", "--environment",
         metavar="ENV",
-        default="bin/info.env",
+        default="./info.env",
         help="Путь к файлу с переменными окружения (по умолчанию: bin/info.env).",
     )
     args = parser.parse_args()

@@ -57,6 +57,8 @@ class ArticleCache(WarehouseBase):
     eissn: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     publication_year: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     journal_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Список авторов хранится как JSON-массив строк
+    authors: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
     scopus_entry: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     scopus_search_meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)

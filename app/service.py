@@ -158,7 +158,7 @@ def verify_article_core(
 def search_by_author_core(
     session: Session,
     author_name: str,
-    max_results: int = 25,
+    max_results: Optional[int] = None,
     use_cache: bool = True,
 ) -> Dict[str, Any]:
     """Поиск статей по автору с обогащением каждой статьи метриками журнала.
@@ -241,7 +241,7 @@ def verify_article(title: str, max_results: int = 25) -> List[Dict[str, Any]]:
 
 def search_by_author(
     author_name: str,
-    max_results: int = 25,
+    max_results: Optional[int] = None,
     use_cache: bool = True,
 ) -> Dict[str, Any]:
     """Search articles by author name; opens one DB session and commits once."""

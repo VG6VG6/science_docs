@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-ENV_FILE = PROJECT_ROOT / "bin" / "info.env"
+ENV_FILE = PROJECT_ROOT / "info.env"
 if ENV_FILE.exists():
     load_dotenv(ENV_FILE)
 
@@ -21,7 +21,7 @@ WEB_DIR = PROJECT_ROOT / "web"
 
 
 def _load_runtime_environment() -> None:
-    env_file = PROJECT_ROOT / "bin" / "info.env"
+    env_file = PROJECT_ROOT / "info.env"
     if env_file.exists():
         load_dotenv(env_file)
 
