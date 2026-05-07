@@ -26,9 +26,9 @@ RUN mkdir -p /app/bin /app/bin/requests
 RUN chmod +x /app/main.py
 
 # Открываем порт для FastAPI
-EXPOSE 8002
+EXPOSE 8000
 
 RUN python3 main.py -u -r
 
 # Команда для запуска Uvicorn
-CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8002", "--proxy-headers"]
+CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

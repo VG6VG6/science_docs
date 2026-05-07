@@ -3,7 +3,7 @@ services:
     build: .
     container_name: science_docs_test_app
     ports:
-      - "8002:8002"
+      - "8000:8000"
     volumes:
       # Пробрасываем папку bin внутрь контейнера, чтобы БД sqlite
       # и скачанные отчеты не пропадали при пересоздании контейнера.
