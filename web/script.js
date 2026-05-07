@@ -17,6 +17,7 @@ const exportBtn = document.getElementById('exportBtn');
 // Хранение текущих данных для экспорта
 let currentTableHeaders = [];
 let currentTableRows = [];
+const AUTHOR_VISIBLE_LIMIT = 10;
 
 function exportToCSV() {
     if (currentTableRows.length === 0) {
@@ -217,6 +218,7 @@ function renderTitleResult(data) {
 
 function renderAuthorResult(data) {
     const articles = Array.isArray(data.articles) ? data.articles : [];
+    const visibleArticles = articles.slice(0, AUTHOR_VISIBLE_LIMIT);
 
     if (!articles.length) {
         resultBody.innerHTML = '<tr><td colspan="11" class="muted">Статьи по автору не найдены.</td></tr>';
@@ -249,7 +251,7 @@ function renderAuthorResult(data) {
     
     exportBtn.style.display = 'block';
 
-    resultBody.innerHTML = articles.map((article) => {
+    resultBody.innerHTML = visibleArticles.map((article) => {
         const ranking = article.ranking || {};
         let authorsStr = Array.isArray(article.authors) && article.authors.length > 0
             ? article.authors.join('; ')
@@ -266,115 +268,6 @@ function renderAuthorResult(data) {
                 <td>${wrapCell(article.publication_year)}</td>
                 <td>${wrapCell(article.journal_name)}</td>
                 <td>${wrapCell(formatQuartile(ranking))}</td>
-                <td>${wrapCell(ranking.sjr)}</td>
-                <td>${wrapCell(ranking.country)}</td>
-                <td>${wrapCell(formatWhiteList(ranking.is_white_list))}</td>
-                <td>${wrapCell(ranking.vak_category)}</td>
-            </tr>
-        `;
-    }).join('');
-}
-
-function updateModeUI() {
-    const mode = searchModeInput.value;
-    const isAuthorMode = mode === 'author';
-
-    queryLabel.textContent = isAuthorMode ? 'Введите имя автора' : 'Введите название';
-    queryInput.placeholder = isAuthorMode ? 'Иванов или Иванов, И.И.' : 'Название статьи';
-    refreshWrap.classList.toggle('hidden', !isAuthorMode);
-}
-
-// Custom Select Logic
-searchModeTrigger.addEventListener('click', (e) => {
-    e.stopPropagation();
-    customSelect.classList.toggle('open');
-});
-
-document.addEventListener('click', () => {
-    if (customSelect.classList.contains('open')) {
-        customSelect.classList.remove('open');
-    }
-});
-
-const options = searchModeOptionsContainer.querySelectorAll('.selectOption');
-options.forEach(option => {
-    option.addEventListener('click', () => {
-        options.forEach(opt => opt.classList.remove('selected'));
-        option.classList.add('selected');
-        
-        const value = option.getAttribute('data-value');
-        const text = option.textContent;
-        
-        searchModeLabel.textContent = text;
-        searchModeInput.value = value;
-        customSelect.classList.remove('open');
-        
-        updateModeUI();
-    });
-});
-
-updateModeUI();
-
-applyTheme(getPreferredTheme());
-if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
-        const current = document.body.getAttribute('data-theme') || 'light';
-        const next = current === 'dark' ? 'light' : 'dark';
-        runThemeTransition(next);
-    });
-}
-
-function renderAuthorResult(data) {
-    const articles = Array.isArray(data.articles) ? data.articles : [];
-
-    if (!articles.length) {
-        resultBody.innerHTML = '<tr><td colspan="11" class="muted">Статьи по автору не найдены.</td></tr>';
-        exportBtn.style.display = 'none';
-        return;
-    }
-
-    currentTableHeaders = ['Авторы', 'Название в Scopus', 'ISSN / eISSN', 'Год', 'Журнал', 'Квартиль', 'SJR', 'Страна', 'Белый список', 'Категория ВАК'];
-    currentTableRows = articles.map((article) => {
-        const ranking = article.ranking || {};
-        let authorsStr = Array.isArray(article.authors) && article.authors.length > 0
-            ? article.authors.join('; ')
-            : safe(article.authors);
-        if (!authorsStr || authorsStr === "-") {
-            authorsStr = data.query_author;
-        }
-        return {
-            'Авторы': authorsStr,
-            'Название в Scopus': safe(article.title),
-            'ISSN / eISSN': `${safe(article.issn)} / ${safe(article.eissn)}`,
-            'Год': safe(article.publication_year),
-            'Журнал': safe(article.journal_name),
-            'Квартиль': safe(ranking.quartile),
-            'SJR': safe(ranking.sjr),
-            'Страна': safe(ranking.country),
-            'Белый список': formatWhiteList(ranking.is_white_list),
-            'Категория ВАК': safe(ranking.vak_category)
-        };
-    });
-    
-    exportBtn.style.display = 'block';
-
-    resultBody.innerHTML = articles.map((article) => {
-        const ranking = article.ranking || {};
-        let authorsStr = Array.isArray(article.authors) && article.authors.length > 0
-            ? article.authors.join('; ')
-            : safe(article.authors);
-        if (!authorsStr || authorsStr === "-") {
-            authorsStr = data.query_author;
-        }
-        return `
-            <tr>
-                <td>${wrapCell(data.query_author)}</td>
-                <td>${wrapAuthors(authorsStr)}</td>
-                <td>${wrapCell(article.title)}</td>
-                <td>${wrapCell(`${safe(article.issn)} / ${safe(article.eissn)}`)}</td>
-                <td>${wrapCell(article.publication_year)}</td>
-                <td>${wrapCell(article.journal_name)}</td>
-                <td>${wrapCell(ranking.quartile)}</td>
                 <td>${wrapCell(ranking.sjr)}</td>
                 <td>${wrapCell(ranking.country)}</td>
                 <td>${wrapCell(formatWhiteList(ranking.is_white_list))}</td>
@@ -472,7 +365,11 @@ form.addEventListener('submit', async (e) => {
                 setStatus(`Ошибка Scopus: ${data.scopus_error}`, true);
             } else {
                 const cacheMark = data.from_cache ? ' (из кеша)' : '';
-                setStatus(`Найдено ${safe(data.returned)} из ${safe(data.total_found)}${cacheMark}`);
+                const shown = Math.min(Number(data.returned || 0), AUTHOR_VISIBLE_LIMIT);
+                setStatus(
+                    `Найдено ${safe(data.returned)} из ${safe(data.total_found)}${cacheMark}. ` +
+                    `Показано ${shown}, экспорт содержит все найденные.`
+                );
             }
             renderAuthorResult(data);
             return;

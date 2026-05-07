@@ -97,15 +97,17 @@ def verify_article_core(
     """Same pipeline as verify_article but uses an existing session."""
     scopus_error: Optional[str] = None
     metas: List[ScopusMetadata] = []
+    limit = min(max(1, max_results), 200)
 
     cached_rows = get_cached_article(session, title)
     if cached_rows:
         metas = [_row_to_scopus_metadata(r) for r in cached_rows]
         # Legacy cache rows may miss author fields; refresh once from Scopus.
         has_any_authors = any(_extract_authors_from_raw_entry(m.raw_entry) for m in metas)
-        if not has_any_authors:
+        # Also refresh when cached rows are fewer than requested limit.
+        if (not has_any_authors) or (len(metas) < limit):
             try:
-                refreshed = get_scopus_metadata(title, max_results=max_results)
+                refreshed = get_scopus_metadata(title, max_results=limit)
             except ScopusError:
                 refreshed = []
             if refreshed:
@@ -113,7 +115,7 @@ def verify_article_core(
                 metas = refreshed
     else:
         try:
-            metas = get_scopus_metadata(title, max_results=max_results)
+            metas = get_scopus_metadata(title, max_results=limit)
         except ScopusError as exc:
             scopus_error = str(exc)
         if metas:
@@ -186,8 +188,18 @@ def search_by_author_core(
     if use_cache:
         cached_rows = get_cached_author_search(session, author_name)
         if cached_rows is not None:
-            result = author_cache_to_result(author_name, cached_rows)
-            from_cache = True
+            cached_result = author_cache_to_result(author_name, cached_rows)
+            cached_count = len(cached_result.articles)
+            # Cache is considered complete only when it satisfies requested size.
+            # For max_results=None we treat it as "need all found".
+            if max_results is None:
+                cache_complete = cached_count >= cached_result.total_found
+            else:
+                cache_complete = cached_count >= min(max_results, cached_result.total_found)
+
+            if cache_complete:
+                result = cached_result
+                from_cache = True
 
     # Идём в Scopus если кеша нет или он отключён
     if result is None:

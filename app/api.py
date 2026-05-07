@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
@@ -68,7 +69,12 @@ def verify(
 @app.get("/search/author")
 def search_author(
     author: str = Query(..., description="Имя автора. Форматы: 'Иванов' или 'Иванов, И.И.'"),
-    limit: int = Query(10, ge=1, le=200, description="Максимальное количество статей (1–200)"),
+    limit: Optional[int] = Query(
+        None,
+        ge=1,
+        le=200,
+        description="Максимальное количество статей (1–200). Пусто = получить все найденные.",
+    ),
     refresh: bool = Query(False, description="Игнорировать кеш и запросить Scopus заново"),
 ):
     """Поиск статей по имени автора.
