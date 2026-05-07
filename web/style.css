@@ -15,6 +15,7 @@
     --accent-hover: #1d4ed8;
     --header-bg: rgba(255, 255, 255, 0.78);
     --header-text: #0f172a;
+    --table-head-bg: color-mix(in srgb, var(--accent) 24%, var(--panel));
     --ring: rgba(37, 99, 235, 0.35);
     --shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.08);
     --shadow-hard: 0 14px 34px rgba(15, 23, 42, 0.14);
@@ -36,15 +37,16 @@ body.theme-dark {
     --muted: #94a3b8;
     --status: #cbd5e1;
     --status-error: #f87171;
-    --accent: #f59e0b;
-    --accent-hover: #d97706;
+    --accent: #fe6601;
+    --accent-hover: #e85b01;
     --header-bg: rgba(17, 24, 39, 0.74);
     --header-text: #f8fafc;
-    --ring: rgba(245, 158, 11, 0.35);
+    --table-head-bg: rgba(254, 102, 1, 0.22);
+    --ring: rgba(254, 102, 1, 0.35);
     --shadow-soft: 0 14px 34px rgba(2, 6, 23, 0.45);
     --shadow-hard: 0 20px 42px rgba(2, 6, 23, 0.55);
     --wipe-bg: #f8fafc;
-    --wipe-line: rgba(245, 158, 11, 0.9);
+    --wipe-line: rgba(254, 102, 1, 0.9);
 }
 
 * {
@@ -96,7 +98,6 @@ body > .appMain {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    border: 1px dashed color-mix(in srgb, var(--accent) 64%, var(--border));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -467,7 +468,7 @@ table {
 }
 
 thead th {
-    background: color-mix(in srgb, var(--accent) 24%, var(--panel));
+    background: var(--table-head-bg);
     color: var(--header-text);
     text-align: left;
     font-weight: 600;
@@ -644,7 +645,9 @@ tbody td:nth-child(11) {
         grid-template-columns: minmax(110px, 130px) 1fr;
         gap: 10px;
         align-items: start;
-        font-size: 13px;
+        font-size: 14px;
+        text-align: left;
+        justify-items: start;
     }
 
     tbody td::before {
@@ -664,6 +667,14 @@ tbody td:nth-child(11) {
     tbody td:nth-child(9)::before { content: "Страна"; }
     tbody td:nth-child(10)::before { content: "Белый список"; }
     tbody td:nth-child(11)::before { content: "ВАК"; }
+
+    tbody td:nth-child(5),
+    tbody td:nth-child(7),
+    tbody td:nth-child(8),
+    tbody td:nth-child(10),
+    tbody td:nth-child(11) {
+        text-align: left;
+    }
 
     tbody td[colspan] {
         display: block;
