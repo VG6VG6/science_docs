@@ -5,9 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 import requests
-
 from config import settings
-
 
 @dataclass
 class ScopusMetadata:
@@ -142,30 +140,47 @@ def _scopus_request(params: dict) -> Dict[str, Any]:
         raise ScopusError("Failed to decode Scopus JSON response") from exc
 
 
-def get_scopus_metadata(query: str) -> Optional[ScopusMetadata]:
-    """Search Scopus by article title or DOI and return core metadata."""
+def get_scopus_metadata(query: str, max_results: int = 25) -> List[ScopusMetadata]:
+    """Search Scopus by article title or DOI; return up to max_results matches."""
+    count = min(max(1, max_results), 200)
     data = _scopus_request({
         "query": _build_title_query(query),
-        "count": 1,
+        "count": count,
+        # Explicitly request author list for /verify response.
+        "field": "dc:title,prism:issn,prism:eIssn,prism:coverDate,"
+                 "prism:publicationName,dc:creator",
     })
 
     entries = data.get("search-results", {}).get("entry", [])
     if not entries:
-        return None
+        return []
+
+    # Scopus returns {"error": "Result set was empty"} instead of empty list
+    if isinstance(entries[0], dict) and "error" in entries[0]:
+        return []
 
     search_results = data.get("search-results") or {}
     search_meta = {k: v for k, v in search_results.items() if k != "entry"}
+    meta_block = search_meta if search_meta else None
 
-    entry = entries[0]
-    return ScopusMetadata(
-        title=entry.get("dc:title"),
-        issn=entry.get("prism:issn"),
-        eissn=entry.get("prism:eIssn"),
-        publication_year=_extract_year_from_cover_date(entry.get("prism:coverDate")),
-        journal_name=entry.get("prism:publicationName"),
-        raw_entry=dict(entry),
-        search_meta=search_meta if search_meta else None,
-    )
+    out: List[ScopusMetadata] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        out.append(
+            ScopusMetadata(
+                title=entry.get("dc:title"),
+                issn=entry.get("prism:issn"),
+                eissn=entry.get("prism:eIssn"),
+                publication_year=_extract_year_from_cover_date(
+                    entry.get("prism:coverDate")
+                ),
+                journal_name=entry.get("prism:publicationName"),
+                raw_entry=dict(entry),
+                search_meta=meta_block,
+            )
+        )
+    return out
 
 
 def search_articles_by_author(
@@ -216,9 +231,12 @@ def search_articles_by_author(
 
 
 if __name__ == "__main__":
-    ans = get_scopus_metadata("Acta Crystallographica Section D: Structural Biology")
-    print("Title:", ans.title)
-    print("ISSN:", ans.issn)
-    print("eISSN:", ans.eissn)
-    print("Year:", ans.publication_year)
-    print("journal:", ans.journal_name)
+    ans = search_articles_by_author("Zaitsev,V")
+    for article in ans.articles:
+        print(article.title)
+
+    # print("Title:", ans.title)
+    # print("ISSN:", ans.issn)
+    # print("eISSN:", ans.eissn)
+    # print("Year:", ans.publication_year)
+    # print("journal:", ans.journal_name)

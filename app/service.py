@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
@@ -12,7 +13,7 @@ from scopus_client import (
     AuthorSearchResult,
 )
 from warehouse_db import get_warehouse_session, init_warehouse_db
-from warehouse_models import WarehouseJournal
+from warehouse_models import ArticleCache, WarehouseJournal
 from warehouse_service import (
     get_cached_article,
     match_metric,
@@ -30,12 +31,15 @@ def _build_ranking(session: Session, issn: str | None, eissn: str | None, year: 
     journal_rank = match_metric(session=session, issn=issn, eissn=eissn, year=year)
     if not journal_rank:
         return None
+    is_fallback_year = journal_rank.year != year
     journal = session.get(WarehouseJournal, journal_rank.journal_id)
     return {
         "issn": journal.issn if journal else None,
         "eissn": journal.eissn if journal else None,
         "title": journal.journal_name if journal else None,
         "year": journal_rank.year,
+        "requested_year": year,
+        "is_fallback_year": is_fallback_year,
         "quartile": journal_rank.quartile,
         "sjr": journal_rank.sjr,
         "country": journal.country if journal else None,
@@ -45,51 +49,110 @@ def _build_ranking(session: Session, issn: str | None, eissn: str | None, year: 
     }
 
 
-def verify_article_core(session: Session, title: str) -> Dict[str, Any]:
+def _row_to_scopus_metadata(row: ArticleCache) -> ScopusMetadata:
+    return ScopusMetadata(
+        title=row.scopus_title,
+        issn=row.issn,
+        eissn=row.eissn,
+        publication_year=row.publication_year,
+        journal_name=row.journal_name,
+        raw_entry=row.scopus_entry,
+        search_meta=row.scopus_search_meta,
+    )
+
+
+def _extract_authors_from_raw_entry(raw_entry: Dict[str, Any] | str | None) -> List[str]:
+    """Extract author names from cached Scopus entry payload."""
+    if isinstance(raw_entry, str):
+        try:
+            raw_entry = json.loads(raw_entry)
+        except (TypeError, ValueError):
+            return []
+    if not isinstance(raw_entry, dict):
+        return []
+    authors_raw = raw_entry.get("author", [])
+    if not isinstance(authors_raw, list):
+        authors_raw = [authors_raw]
+
+    authors: List[str] = []
+    for author in authors_raw:
+        if not isinstance(author, dict):
+            continue
+        name = author.get("authname") or author.get("ce:indexed-name") or ""
+        if name:
+            authors.append(str(name))
+    if authors:
+        return authors
+
+    # Fallback for short title-search payloads where only creator is provided.
+    creator = raw_entry.get("dc:creator")
+    if isinstance(creator, str) and creator.strip():
+        return [creator.strip()]
+    return authors
+
+
+def verify_article_core(
+    session: Session, title: str, max_results: int = 25
+) -> List[Dict[str, Any]]:
     """Same pipeline as verify_article but uses an existing session."""
     scopus_error: Optional[str] = None
-    scopus_data: Optional[ScopusMetadata] = None
+    metas: List[ScopusMetadata] = []
 
-    cached = get_cached_article(session, title)
-    if cached:
-        scopus_data = ScopusMetadata(
-            title=cached.scopus_title,
-            issn=cached.issn,
-            eissn=cached.eissn,
-            publication_year=cached.publication_year,
-            journal_name=cached.journal_name,
-            raw_entry=cached.scopus_entry,
-            search_meta=cached.scopus_search_meta,
-        )
+    cached_rows = get_cached_article(session, title)
+    if cached_rows:
+        metas = [_row_to_scopus_metadata(r) for r in cached_rows]
+        # Legacy cache rows may miss author fields; refresh once from Scopus.
+        has_any_authors = any(_extract_authors_from_raw_entry(m.raw_entry) for m in metas)
+        if not has_any_authors:
+            try:
+                refreshed = get_scopus_metadata(title, max_results=max_results)
+            except ScopusError:
+                refreshed = []
+            if refreshed:
+                upsert_article_cache(session, title, refreshed)
+                metas = refreshed
     else:
         try:
-            scopus_data = get_scopus_metadata(title)
+            metas = get_scopus_metadata(title, max_results=max_results)
         except ScopusError as exc:
             scopus_error = str(exc)
-        if scopus_data:
-            upsert_article_cache(session, title, scopus_data)
+        if metas:
+            upsert_article_cache(session, title, metas)
 
-    ranking = None
-    if scopus_data:
+    if not metas:
+        return [
+            {
+                "query_title": title,
+                "scopus_error": scopus_error,
+                "scopus": None,
+                "ranking": None,
+            }
+        ]
+
+    out: List[Dict[str, Any]] = []
+    for meta in metas:
         ranking = _build_ranking(
             session,
-            issn=scopus_data.issn,
-            eissn=scopus_data.eissn,
-            year=scopus_data.publication_year,
+            issn=meta.issn,
+            eissn=meta.eissn,
+            year=meta.publication_year,
         )
-
-    return {
-        "query_title": title,
-        "scopus_error": scopus_error,
-        "scopus": {
-            "title": scopus_data.title if scopus_data else None,
-            "issn": scopus_data.issn if scopus_data else None,
-            "eissn": scopus_data.eissn if scopus_data else None,
-            "publication_year": scopus_data.publication_year if scopus_data else None,
-            "journal_name": scopus_data.journal_name if scopus_data else None,
-        },
-        "ranking": ranking,
-    }
+        out.append(
+            {
+                "query_title": title,
+                "scopus_error": scopus_error,
+                "scopus": {
+                    "title": meta.title,
+                    "issn": meta.issn,
+                    "eissn": meta.eissn,
+                    "publication_year": meta.publication_year,
+                    "journal_name": meta.journal_name,
+                    "authors": _extract_authors_from_raw_entry(meta.raw_entry),
+                },
+                "ranking": ranking,
+            }
+        )
+    return out
 
 
 def search_by_author_core(
@@ -169,11 +232,11 @@ def search_by_author_core(
     }
 
 
-def verify_article(title: str) -> Dict[str, Any]:
+def verify_article(title: str, max_results: int = 25) -> List[Dict[str, Any]]:
     """Verify one article; opens one DB session and commits once."""
     init_warehouse_db()
     with get_warehouse_session() as session:
-        return verify_article_core(session, title)
+        return verify_article_core(session, title, max_results=max_results)
 
 
 def search_by_author(

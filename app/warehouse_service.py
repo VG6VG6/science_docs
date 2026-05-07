@@ -32,31 +32,50 @@ def _issn_variants(issn: str) -> list[str]:
 # Article cache
 # ---------------------------------------------------------------------------
 
-def get_cached_article(session: Session, query_title: str) -> Optional[ArticleCache]:
-    stmt = select(ArticleCache).where(ArticleCache.query_title == query_title).limit(1)
-    return session.scalars(stmt).first()
+def _article_cache_issn_key(issn: str | None, eissn: str | None) -> tuple[str | None, str | None]:
+    """Normalize ISSN fields for cache row identity (query_title + issn + eissn)."""
+    ni = _normalize_issn(issn) if issn else None
+    ne = _normalize_issn(eissn) if eissn else None
+    return (ni, ne)
 
 
-def upsert_article_cache(session: Session, query_title: str, meta: ScopusMetadata) -> None:
-    if not meta:
+def get_cached_article(session: Session, query_title: str) -> List[ArticleCache]:
+    stmt = select(ArticleCache).where(ArticleCache.query_title == query_title)
+    return list(session.scalars(stmt).all())
+
+
+def upsert_article_cache(
+    session: Session, query_title: str, metas: List[ScopusMetadata]
+) -> None:
+    if not metas:
         return
 
-    cached = session.query(ArticleCache).filter(
-        ArticleCache.query_title == query_title
-    ).first()
+    for meta in metas:
+        want = _article_cache_issn_key(meta.issn, meta.eissn)
+        cached: ArticleCache | None = None
+        for row in session.scalars(
+            select(ArticleCache).where(ArticleCache.query_title == query_title)
+        ).all():
+            if _article_cache_issn_key(row.issn, row.eissn) == want:
+                cached = row
+                break
 
-    if not cached:
-        cached = ArticleCache(query_title=query_title)
-        session.add(cached)
+        if not cached:
+            cached = ArticleCache(
+                query_title=query_title,
+                issn=meta.issn,
+                eissn=meta.eissn,
+            )
+            session.add(cached)
 
-    cached.scopus_title = meta.title
-    cached.issn = meta.issn
-    cached.eissn = meta.eissn
-    cached.publication_year = meta.publication_year
-    cached.journal_name = meta.journal_name
-    cached.scopus_entry = meta.raw_entry
-    cached.scopus_search_meta = meta.search_meta
-    cached.last_checked_at = datetime.now(timezone.utc)
+        cached.scopus_title = meta.title
+        cached.issn = meta.issn
+        cached.eissn = meta.eissn
+        cached.publication_year = meta.publication_year
+        cached.journal_name = meta.journal_name
+        cached.scopus_entry = meta.raw_entry
+        cached.scopus_search_meta = meta.search_meta
+        cached.last_checked_at = datetime.now(timezone.utc)
 
 
 # ---------------------------------------------------------------------------
