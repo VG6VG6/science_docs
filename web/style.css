@@ -16,6 +16,9 @@
     --header-bg: rgba(255, 255, 255, 0.78);
     --header-text: #0f172a;
     --table-head-bg: color-mix(in srgb, var(--accent) 24%, var(--panel));
+    --tooltip-bg: color-mix(in srgb, var(--panel) 92%, var(--bg));
+    --tooltip-text: var(--text);
+    --tooltip-border: color-mix(in srgb, var(--border) 75%, transparent);
     --ring: rgba(37, 99, 235, 0.35);
     --shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.08);
     --shadow-hard: 0 14px 34px rgba(15, 23, 42, 0.14);
@@ -42,6 +45,9 @@ body.theme-dark {
     --header-bg: rgba(17, 24, 39, 0.74);
     --header-text: #f8fafc;
     --table-head-bg: rgba(254, 102, 1, 0.22);
+    --tooltip-bg: #0b1220;
+    --tooltip-text: #e5e7eb;
+    --tooltip-border: #243243;
     --ring: rgba(254, 102, 1, 0.35);
     --shadow-soft: 0 14px 34px rgba(2, 6, 23, 0.45);
     --shadow-hard: 0 20px 42px rgba(2, 6, 23, 0.55);
@@ -105,7 +111,7 @@ body > .appMain {
     letter-spacing: 0.08em;
     color: var(--accent);
     font-weight: 700;
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    background: transparent;
     flex: 0 0 auto;
 }
 
@@ -451,19 +457,20 @@ html.theme-transitioning::view-transition-new(root) {
 
 .tableWrap {
     width: 100%;
-    overflow-x: auto;
+    overflow: visible;
     border-radius: 12px;
 }
 
 table {
     width: 100%;
-    min-width: 900px;
+    min-width: 100%;
     table-layout: fixed;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     background: color-mix(in srgb, var(--panel) 90%, transparent);
-    border: 1px solid var(--border);
+    border: 0;
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible;
     transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
@@ -475,9 +482,88 @@ thead th {
     padding: clamp(8px, 0.8vw + 4px, 12px);
     font-size: clamp(12px, 0.4vw + 10px, 14px);
     white-space: normal;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: auto;
     line-height: 1.25;
+}
+
+thead th:first-child {
+    border-top-left-radius: 12px;
+}
+
+thead th:last-child {
+    border-top-right-radius: 12px;
+}
+
+tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 12px;
+}
+
+tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 12px;
+}
+
+thead th .thLabel {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: help;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+thead th .thLabel::before,
+thead th .thLabel::after {
+    opacity: 0;
+    transform: translate(-50%, 4px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 5;
+}
+
+thead th .thLabel::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 2px);
+    border: 6px solid transparent;
+    border-top-color: var(--tooltip-bg);
+    filter: drop-shadow(0 2px 2px color-mix(in srgb, var(--shadow-soft) 60%, transparent));
+}
+
+thead th .thLabel::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    min-width: 180px;
+    max-width: 260px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    border: 1px solid var(--tooltip-border);
+    box-shadow: var(--shadow-soft);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.35;
+    white-space: normal;
+}
+
+thead th .thLabel:hover::before,
+thead th .thLabel:hover::after,
+thead th .thLabel:focus-visible::before,
+thead th .thLabel:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+thead th .thLabel:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 6px;
 }
 
 tbody td {
@@ -486,9 +572,23 @@ tbody td {
     font-size: clamp(12px, 0.4vw + 10px, 14px);
     vertical-align: top;
     white-space: normal;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: auto;
+    line-height: 1.35;
+}
+
+.cellText {
+    hyphens: auto;
+    hyphenate-character: "-";
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+.cellText.noHyphen {
+    hyphens: none;
     overflow-wrap: anywhere;
     word-break: break-word;
-    line-height: 1.35;
 }
 
 @media (min-width: 681px) {
@@ -524,7 +624,7 @@ tbody td:nth-child(11) {
     }
 
     table {
-        min-width: 820px;
+        min-width: 100%;
     }
 }
 
@@ -569,11 +669,11 @@ tbody td:nth-child(11) {
     }
 
     table {
-        min-width: 680px;
+        min-width: 100%;
     }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 900px) {
     .appHeader {
         flex-wrap: nowrap;
         align-items: center;
@@ -648,6 +748,9 @@ tbody td:nth-child(11) {
         font-size: 14px;
         text-align: left;
         justify-items: start;
+        overflow-wrap: normal;
+        word-break: normal;
+        hyphens: auto;
     }
 
     tbody td::before {

@@ -11,6 +11,7 @@ const refreshInput = document.getElementById('refresh');
 const resultBody = document.getElementById('resultBody');
 const statusEl = document.getElementById('status');
 const themeToggle = document.getElementById('themeToggle');
+const logoImg = document.getElementById('logoImg');
 const exportBtn = document.getElementById('exportBtn');
 
 // Хранение текущих данных для экспорта
@@ -63,6 +64,11 @@ function applyTheme(theme) {
     document.body.setAttribute('data-theme', theme);
     document.body.classList.toggle('theme-dark', theme === 'dark');
     localStorage.setItem('app-theme', theme);
+    if (logoImg) {
+        logoImg.src = theme === 'dark'
+            ? '/static/src/logo_black.png'
+            : '/static/src/logo_white.png';
+    }
     if (themeToggle) {
         if (theme === 'dark') {
             themeToggle.querySelector('.dark-icon').style.display = 'none';
@@ -111,6 +117,27 @@ function safe(value) {
     return String(value);
 }
 
+function detectLang(text) {
+    if (text === "-") {
+        return "ru";
+    }
+    return /[А-Яа-яЁё]/.test(text) ? "ru" : "en";
+}
+
+function wrapCell(value, options = {}) {
+    const text = safe(value);
+    const lang = detectLang(text);
+    const extraClass = options.noHyphen ? " noHyphen" : "";
+    return `<span class="cellText${extraClass}" lang="${lang}">${text}</span>`;
+}
+
+function wrapAuthors(value) {
+    const text = safe(value);
+    const lang = detectLang(text);
+    const withBreaks = text.replace(/([,;])\s+/g, "$1<wbr> ");
+    return `<span class="cellText noHyphen" lang="${lang}">${withBreaks}</span>`;
+}
+
 function setStatus(text, isError = false) {
     statusEl.textContent = text;
     statusEl.classList.toggle('error', isError);
@@ -149,17 +176,17 @@ function renderTitleResult(data) {
     
     resultBody.innerHTML = `
     <tr>
-          <td>${safe(data.query_title)}</td>
-          <td>${authors}</td>
-          <td>${safe(scopus.title)}</td>
-          <td>${safe(scopus.issn)} / ${safe(scopus.eissn)}</td>
-          <td>${safe(scopus.publication_year)}</td>
-          <td>${safe(scopus.journal_name)}</td>
-          <td>${safe(ranking.quartile)}</td>
-          <td>${safe(ranking.sjr)}</td>
-          <td>${safe(ranking.country)}</td>
-          <td>${formatWhiteList(ranking.is_white_list)}</td>
-          <td>${safe(ranking.vak_category)}</td>
+            <td>${wrapCell(data.query_title)}</td>
+              <td>${wrapAuthors(authors)}</td>
+            <td>${wrapCell(scopus.title)}</td>
+            <td>${wrapCell(`${safe(scopus.issn)} / ${safe(scopus.eissn)}`)}</td>
+            <td>${wrapCell(scopus.publication_year)}</td>
+            <td>${wrapCell(scopus.journal_name)}</td>
+            <td>${wrapCell(ranking.quartile)}</td>
+            <td>${wrapCell(ranking.sjr)}</td>
+            <td>${wrapCell(ranking.country)}</td>
+            <td>${wrapCell(formatWhiteList(ranking.is_white_list))}</td>
+            <td>${wrapCell(ranking.vak_category)}</td>
         </tr>
       `;
 }
@@ -208,17 +235,17 @@ function renderAuthorResult(data) {
         }
         return `
             <tr>
-                <td>${safe(data.query_author)}</td>
-                <td>${authorsStr}</td>
-                <td>${safe(article.title)}</td>
-                <td>${safe(article.issn)} / ${safe(article.eissn)}</td>
-                <td>${safe(article.publication_year)}</td>
-                <td>${safe(article.journal_name)}</td>
-                <td>${safe(ranking.quartile)}</td>
-                <td>${safe(ranking.sjr)}</td>
-                <td>${safe(ranking.country)}</td>
-                <td>${formatWhiteList(ranking.is_white_list)}</td>
-                <td>${safe(ranking.vak_category)}</td>
+                <td>${wrapCell(data.query_author)}</td>
+                <td>${wrapAuthors(authorsStr)}</td>
+                <td>${wrapCell(article.title)}</td>
+                <td>${wrapCell(`${safe(article.issn)} / ${safe(article.eissn)}`)}</td>
+                <td>${wrapCell(article.publication_year)}</td>
+                <td>${wrapCell(article.journal_name)}</td>
+                <td>${wrapCell(ranking.quartile)}</td>
+                <td>${wrapCell(ranking.sjr)}</td>
+                <td>${wrapCell(ranking.country)}</td>
+                <td>${wrapCell(formatWhiteList(ranking.is_white_list))}</td>
+                <td>${wrapCell(ranking.vak_category)}</td>
             </tr>
         `;
     }).join('');
