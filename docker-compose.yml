@@ -1,13 +1,15 @@
 services:
   web:
     build: .
-    container_name: science_docs_test_app
+    container_name: science_docs_app
     ports:
       - "8000:8000"
     volumes:
       # Пробрасываем папку bin внутрь контейнера, чтобы БД sqlite
       # и скачанные отчеты не пропадали при пересоздании контейнера.
-      - ./bin:/app/bin
+      - /opt/sdvolume/bin:/app/bin
+      - /opt/sdvolume/csv_files:/app/csv_files
+      - /opt/sdvolume/info.enf:/app/info.env
     env_file:
-      - ./info.env
+      - /app/info.env
     restart: unless-stopped
