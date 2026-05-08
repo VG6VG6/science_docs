@@ -3,7 +3,7 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main   # или master, если основная ветка называется master
+      - fix_front1   # или master, если основная ветка называется master
 
 jobs:
   deploy:
@@ -27,7 +27,7 @@ jobs:
       - name: Copy project files to server
         run: |
           rsync -avz --no-times --delete --exclude='.git' --exclude='.github' --exclude='info.env' --exclude='bin' --exclude='csv_files' \
-            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.SERVER_PATH }}/
+            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.SERVER_PATH_TEST }}/
 
       - name: Build and restart Docker container on server
         run: |
