@@ -27,7 +27,7 @@ jobs:
       - name: Copy project files to server
         run: |
           rsync -avz --no-times --delete --exclude='.git' --exclude='.github' --exclude='info.env' --exclude='bin' --exclude='csv_files' \
-            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.SERVER_PATH }}/
+            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.SERVER_PATH_MAIN }}/
 
       - name: Build and restart Docker container on server
         run: |
