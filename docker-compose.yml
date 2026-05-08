@@ -10,5 +10,5 @@ services:
       - /opt/sdvolume/bin:/app/bin
       - /opt/sdvolume/csv_files:/app/csv_files
     env_file:
-      - /opt/sdvolume/info.env
+      - /opt/sdvolume/data/info.env
     restart: unless-stopped
