@@ -3,7 +3,7 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - fix_front1   # или master, если основная ветка называется master
+      - main   # или master, если основная ветка называется master
 
 jobs:
   deploy:
