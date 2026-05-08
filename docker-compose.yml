@@ -9,7 +9,7 @@ services:
       # и скачанные отчеты не пропадали при пересоздании контейнера.
       - /opt/sdvolume/bin:/app/bin
       - /opt/sdvolume/csv_files:/app/csv_files
-      - /opt/sdvolume/info.enf:/app/info.env
+      - /opt/sdvolume/info.env:/app/info.env
     env_file:
       - /app/info.env
     restart: unless-stopped
